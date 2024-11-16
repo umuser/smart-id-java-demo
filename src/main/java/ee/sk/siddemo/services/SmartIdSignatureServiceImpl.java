@@ -26,7 +26,8 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.digidoc4j.Configuration;
 import org.digidoc4j.Container;
@@ -60,10 +61,8 @@ import ee.sk.smartid.exception.useraccount.UserAccountNotFoundException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
-import ee.sk.smartid.rest.SmartIdConnector;
 import ee.sk.smartid.rest.dao.Interaction;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.rest.dao.SessionStatus;
 
 @Service
 public class SmartIdSignatureServiceImpl implements SmartIdSignatureService {
@@ -78,6 +77,9 @@ public class SmartIdSignatureServiceImpl implements SmartIdSignatureService {
 
     @Value("${sid.client.relyingPartyName}")
     private String sidRelyingPartyName;
+
+    @Value("${app.signed-files-directory}")
+    private String signedFilesDirectory;
 
     private final SmartIdCertificateService certificateService;
     private final SmartIdClient client;
@@ -142,8 +144,8 @@ public class SmartIdSignatureServiceImpl implements SmartIdSignatureService {
 
     @Override
     public SigningResult sign(SigningSessionInfo signingSessionInfo) {
-        String filePath;
         Signature signature;
+        Path targetPath;
 
         try {
 
@@ -165,8 +167,8 @@ public class SmartIdSignatureServiceImpl implements SmartIdSignatureService {
             signingSessionInfo.getContainer().addSignature(signature);
 
             File containerFile = File.createTempFile("sid-demo-container-", ".asice");
-            filePath = containerFile.getAbsolutePath();
-            signingSessionInfo.getContainer().saveAsFile(filePath);
+            targetPath = createSavePath(containerFile);
+            signingSessionInfo.getContainer().saveAsFile(targetPath.toString());
         } catch (UserAccountNotFoundException | UserRefusedException | UserSelectedWrongVerificationCodeException | SessionTimeoutException |
                  DocumentUnusableException | ServerMaintenanceException e) {
             logger.warn("Smart-ID service returned internal error that cannot be handled locally.");
@@ -179,17 +181,16 @@ public class SmartIdSignatureServiceImpl implements SmartIdSignatureService {
                 .withResult("Signing successful")
                 .withValid(signature.validateSignature().isValid())
                 .withTimestamp(signature.getTimeStampCreationTime())
-                .withContainerFilePath(filePath)
+                .withContainerFilePath(targetPath.toString())
                 .build();
     }
 
-    private SessionStatus pollSessionStatus(String sessionId, SmartIdConnector connector1) throws InterruptedException {
-        SessionStatus sessionStatus = null;
-        while (sessionStatus == null || "RUNNING".equalsIgnoreCase(sessionStatus.getState())) {
-            sessionStatus = connector1.getSessionStatus(sessionId);
-            TimeUnit.SECONDS.sleep(1);
+    private Path createSavePath(File containerFile) {
+        Path targetDir = Paths.get(signedFilesDirectory);
+        File directory = targetDir.toFile();
+        if (!directory.exists()) {
+            directory.mkdirs();
         }
-        return sessionStatus;
+        return targetDir.resolve(containerFile.getName());
     }
-
 }

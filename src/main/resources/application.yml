@@ -24,3 +24,5 @@ sid:
       filename: /sid.trusted_root_certs.p12
       password: changeit
 
+app:
+  signed-files-directory: target/signed-files
