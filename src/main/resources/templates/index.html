@@ -95,18 +95,8 @@
 </head>
 
 <body>
-<header>
-    <div class="navbar navbar-dark bg-dark shadow-sm">
-        <div class="container d-flex justify-content-between">
-            <a href="/" class="navbar-brand d-flex align-items-center">
-                <strong>Smart-ID Demo</strong>
-            </a>
-            <a href="https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters" target="_blank" class="navbar-brand d-flex align-items-center">
-                <strong>Test persons</strong>
-            </a>
-        </div>
-    </div>
-</header>
+
+<div th:insert="~{fragments/header :: header}"></div>
 
 <div class="custom-switch">
     <h1 class="h1-padding text-center">Smart-ID</h1>
@@ -121,7 +111,7 @@
 </div>
 
 <div class="forms">
-    <form method="POST" th:action="@{/authenticationRequest}" th:object="${userRequest}" class="form-action" id="authenticationForm">
+    <form method="POST" th:action="@{/v2/authenticationRequest}" th:object="${userRequest}" class="form-action" id="authenticationForm">
         <div class="form-group">
             <label for="country">Country</label>
             <select th:field="*{country}" id="country">
@@ -143,7 +133,7 @@
         <button type="submit" class="btn btn-primary float-right">Authenticate</button>
     </form>
 
-    <form method="POST" th:action="@{/signatureRequest}" th:object="${userRequest}" enctype="multipart/form-data" class="form-action" id="signatureForm">
+    <form method="POST" th:action="@{/v2/signatureRequest}" th:object="${userRequest}" enctype="multipart/form-data" class="form-action" id="signatureForm">
 
         <div class="form-group">
             <label for="country">Country</label>

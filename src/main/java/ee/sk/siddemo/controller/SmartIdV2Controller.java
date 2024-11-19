@@ -41,22 +41,22 @@ import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.SigningSessionInfo;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.model.UserSidSession;
-import ee.sk.siddemo.services.SmartIdAuthenticationService;
-import ee.sk.siddemo.services.SmartIdSignatureService;
-import ee.sk.smartid.AuthenticationIdentity;
+import ee.sk.siddemo.services.SmartIdV2AuthenticationService;
+import ee.sk.siddemo.services.SmartIdV2SignatureService;
+import ee.sk.smartid.v2.AuthenticationIdentity;
 import jakarta.validation.Valid;
 
 @RestController
-public class SmartIdController {
+public class SmartIdV2Controller {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SmartIdV2Controller.class);
 
-    private final SmartIdSignatureService signatureService;
-    private final SmartIdAuthenticationService authenticationService;
+    private final SmartIdV2SignatureService signatureService;
+    private final SmartIdV2AuthenticationService authenticationService;
     private final UserSidSession userSidSession;
 
     @Autowired
-    public SmartIdController(SmartIdSignatureService signatureService, SmartIdAuthenticationService authenticationService, UserSidSession userSidSession) {
+    public SmartIdV2Controller(SmartIdV2SignatureService signatureService, SmartIdV2AuthenticationService authenticationService, UserSidSession userSidSession) {
         this.signatureService = signatureService;
         this.authenticationService = authenticationService;
         this.userSidSession = userSidSession; // session scope, autowired
@@ -67,7 +67,7 @@ public class SmartIdController {
         return new ModelAndView("index", "userRequest", new UserRequest());
     }
 
-    @PostMapping(value = "/signatureRequest")
+    @PostMapping(value = "/v2/signatureRequest")
     public ModelAndView sendSignatureRequest(@ModelAttribute("userRequest") UserRequest userRequest,
                                              BindingResult bindingResult, ModelMap model) {
 
@@ -88,7 +88,7 @@ public class SmartIdController {
         return new ModelAndView("/signature", model);
     }
 
-    @PostMapping(value = "/sign")
+    @PostMapping(value = "/v2/sign")
     public ModelAndView sign(ModelMap model) {
 
         SigningResult signingResult = signatureService.sign(userSidSession.getSigningSessionInfo());
@@ -100,7 +100,7 @@ public class SmartIdController {
         return new ModelAndView("signingResult", model);
     }
 
-    @PostMapping(value = "/authenticationRequest")
+    @PostMapping(value = "/v2/authenticationRequest")
     public ModelAndView sendAuthenticationRequest(@ModelAttribute("userRequest") @Valid UserRequest userRequest,
                                                   BindingResult bindingResult, ModelMap model) {
 
@@ -117,7 +117,7 @@ public class SmartIdController {
         return new ModelAndView("/authentication", model);
     }
 
-    @PostMapping(value = "/authenticate")
+    @PostMapping(value = "/v2/authenticate")
     public ModelAndView authenticate(ModelMap model) {
         AuthenticationIdentity person = authenticationService.authenticate(userSidSession.getAuthenticationSessionInfo());
         model.addAttribute("person", person);
