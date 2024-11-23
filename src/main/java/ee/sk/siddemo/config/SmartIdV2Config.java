@@ -1,4 +1,4 @@
-package ee.sk.siddemo;
+package ee.sk.siddemo.config;
 
 /*-
  * #%L

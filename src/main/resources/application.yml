@@ -24,6 +24,18 @@ sid:
       trusted-root-certs:
         filename: /sid.trusted_root_certs.p12
         password: changeit
+  v3:
+    client:
+      relyingPartyUuid: ${SID_RELYING_PARTY_UUID}
+      relyingPartyName: ${SID_RELYING_PARTY_NAME}
+      applicationProviderHost: https://sid.demo.sk.ee/smart-id-rp/v3/
+    truststore:
+      trusted-server-ssl-certs:
+        filename: /sid.trusted_server_certs.p12
+        password: changeit
+      trusted-root-certs:
+        filename: /sid.trusted_root_certs.p12
+        password: changeit
 
 app:
   signed-files-directory: target/signed-files

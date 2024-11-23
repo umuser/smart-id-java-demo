@@ -25,6 +25,7 @@ package ee.sk.siddemo.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.FileUploadException;
-import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.AuthenticationSessionInfo;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.SigningSessionInfo;
@@ -62,9 +62,10 @@ public class SmartIdV2Controller {
         this.userSidSession = userSidSession; // session scope, autowired
     }
 
-    @GetMapping(value = "/")
-    public ModelAndView userRequestForm() {
-        return new ModelAndView("index", "userRequest", new UserRequest());
+    @GetMapping(value = "/rp-api-v2")
+    public ModelAndView userRequestForm(Model model) {
+        model.addAttribute("activeTab", "rp-api-v2");
+        return new ModelAndView("v2/main", "userRequest", new UserRequest());
     }
 
     @PostMapping(value = "/v2/signatureRequest")
@@ -84,8 +85,9 @@ public class SmartIdV2Controller {
         userSidSession.setSigningSessionInfo(signingSessionInfo);
 
         model.addAttribute("signingSessionInfo", signingSessionInfo);
+        model.addAttribute("activeTab", "rp-api-v2");
 
-        return new ModelAndView("/signature", model);
+        return new ModelAndView("v2/signature", model);
     }
 
     @PostMapping(value = "/v2/sign")
@@ -96,8 +98,9 @@ public class SmartIdV2Controller {
         userSidSession.clearSigningSession();
 
         model.addAttribute("signingResult", signingResult);
+        model.addAttribute("activeTab", "rp-api-v2");
 
-        return new ModelAndView("signingResult", model);
+        return new ModelAndView("v2/signingResult", model);
     }
 
     @PostMapping(value = "/v2/authenticationRequest")
@@ -113,8 +116,9 @@ public class SmartIdV2Controller {
         userSidSession.setAuthenticationSessionInfo(authenticationSessionInfo);
 
         model.addAttribute("verificationCode", authenticationSessionInfo.getVerificationCode());
+        model.addAttribute("activeTab", "rp-api-v2");
 
-        return new ModelAndView("/authentication", model);
+        return new ModelAndView("v2/authentication", model);
     }
 
     @PostMapping(value = "/v2/authenticate")
@@ -123,8 +127,8 @@ public class SmartIdV2Controller {
         model.addAttribute("person", person);
 
         userSidSession.clearAuthenticationSessionInfo();
-
-        return new ModelAndView("authenticationResult", model);
+        model.addAttribute("activeTab", "rp-api-v2");
+        return new ModelAndView("v2/authenticationResult", model);
     }
 
     @ExceptionHandler(FileUploadException.class)
@@ -132,16 +136,6 @@ public class SmartIdV2Controller {
         var model = new ModelMap();
 
         model.addAttribute("errorMessage", "File upload error");
-
-        return new ModelAndView("sidOperationError", model);
-    }
-
-    @ExceptionHandler(SidOperationException.class)
-    public ModelAndView handleSidOperationException(SidOperationException exception) {
-        var model = new ModelMap();
-
-        model.addAttribute("errorMessage", exception.getMessage());
-
         return new ModelAndView("sidOperationError", model);
     }
 
@@ -155,6 +149,4 @@ public class SmartIdV2Controller {
 
         return new ModelAndView("error", model);
     }
-
-
 }

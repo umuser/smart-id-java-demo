@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Smart-ID</title>
     <!-- Bootstrap core CSS -->
-    <link href="../static/css/bootstrap.css" rel="stylesheet" th:href="@{/css/bootstrap.css}"/>
+    <link href="../../static/css/bootstrap.css" rel="stylesheet" th:href="@{/css/bootstrap.css}"/>
 
     <style>
         html,
@@ -44,7 +44,7 @@
         <p>To sign the uploaded document, enter the Smart-ID PIN2 into your phone after you receive a SMS with the same control code you can see here.</p>
 
     </div>
-    <form method="POST" th:action="@{/sign}" name="signatureConfirm"></form>
+    <form method="POST" th:action="@{/v2/sign}" name="signatureConfirm"></form>
 </div>
 
 <script th:src="@{/js/bootstrap.js}"></script>
