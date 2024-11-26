@@ -2,6 +2,7 @@ package ee.sk.siddemo.config;
 
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +29,9 @@ public class SmartIdV3Config {
     @Value("${sid.v3.client.applicationProviderHost}")
     private String sidApplicationProviderHost;
 
+    @Value("${sid.v3.client.polling-timeout-in-seconds}")
+    private Integer sidPollingTimeout;
+
     @Bean
     public SmartIdClient smartIdClientV3() throws Exception {
         InputStream is = SmartIdV3Config.class.getResourceAsStream(sidTrustedServerSslCertsFilename);
@@ -40,6 +44,7 @@ public class SmartIdV3Config {
         client.setRelyingPartyName(sidRelyingPartyName);
         client.setHostUrl(sidApplicationProviderHost);
         client.setTrustStore(trustStore);
+        client.setPollingSleepTimeout(TimeUnit.SECONDS, sidPollingTimeout);
 
         return client;
     }

@@ -7,6 +7,7 @@ import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.model.DynamicContent;
@@ -21,6 +22,9 @@ import jakarta.servlet.http.HttpSession;
 public class DynamicContentService {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicContentService.class);
+
+    @Value("${sid.v3.client.dynamic-link-url}")
+    private String dynamicLinkUrl;
 
     public final SmartIdClient smartIdClientV3;
 
@@ -40,14 +44,21 @@ public class DynamicContentService {
         long elapsedSeconds = Duration.between(responseReceivedTime, Instant.now()).getSeconds();
         logger.info("Dynamic content elapsed seconds: {}", elapsedSeconds);
 
-        String authCode = AuthCode.createHash(DynamicLinkType.WEB_2_APP, SessionType.AUTHENTICATION, sessionSecret, elapsedSeconds);
         DynamicContentBuilder contentBuilder = smartIdClientV3.createDynamicContent()
+                .withBaseUrl(dynamicLinkUrl)
                 .withSessionType(SessionType.AUTHENTICATION)
                 .withSessionToken(sessionToken)
-                .withElapsedSeconds(elapsedSeconds)
-                .withAuthCode(authCode);
-        URI dynamicLink = contentBuilder.withDynamicLinkType(DynamicLinkType.WEB_2_APP).createUri();
-        String qrDataUri = contentBuilder.withDynamicLinkType(DynamicLinkType.QR_CODE).createQrCodeDataUri();
+                .withElapsedSeconds(elapsedSeconds);
+
+        URI dynamicLink = contentBuilder
+                .withDynamicLinkType(DynamicLinkType.WEB_2_APP)
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, SessionType.AUTHENTICATION, sessionSecret, elapsedSeconds))
+                .createUri();
+
+        String qrDataUri = contentBuilder
+                .withDynamicLinkType(DynamicLinkType.QR_CODE)
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, SessionType.AUTHENTICATION, sessionSecret, elapsedSeconds))
+                .createQrCodeDataUri();
         return new DynamicContent(dynamicLink, qrDataUri);
     }
 }

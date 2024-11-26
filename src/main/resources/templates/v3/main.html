@@ -42,42 +42,48 @@
                     </div>
 
                     <div class="container d-none" id="person-code-authentication-area">
-                        <!--                    add form to submit-->
-                        <form action="v3/person-code-authentication" method="post">
+                        <form action="v3/start-authentication-with-person-code" th:object="${userRequest}" method="POST" class="form-action">
                             <div class="text-center">
                                 <h1>Smart-ID</h1>
                             </div>
-                            <div>
+                            <div class="form-group">
                                 <label for="country"> Select country </label>
-                                <select id="country" class="form-control" name="country">
-                                    <option value="EE">Estonia</option>
-                                    <option value="LT">Lithuania</option>
-                                    <option value="LV">Latvia</option>
+                                <select th:field="*{country}" id="country" class="form-control" name="country">
+                                    <option th:value="'EE'" value="EE">Estonia</option>
+                                    <option th:value="'LV'" value="LV">Latvia</option>
+                                    <option th:value="'LT'" th:text="Lithuania"></option>
+                                    <option th:value="'BE'" th:text="Belgium"></option>
                                 </select>
+                                <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
+                                    country Error
+                                </div>
                             </div>
 
-                            <div class="pt-3">
+                            <div class="form-group">
                                 <label for="person-code">Person code</label>
-                                <input type="text" id="person-code" class="form-control" placeholder="Enter person code" name="personCode">
+                                <input th:field="*{nationalIdentityNumber}" type="text" id="person-code" class="form-control"
+                                       placeholder="Enter person code" name="personCode">
+                                <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}" style="color:red">
+                                    nationalIdentityNumber Error </div>
                             </div>
-                            <div class="text-right pt-3">
+                            <div class="text-right">
                                 <button type="submit" class="btn btn-primary">Authenticate</button>
                             </div>
                         </form>
                     </div>
 
                     <div class="container d-none" id="document-number-authentication-area">
-                        <form action="v3/document-number-authentication" method="post">
+                        <form action="v3/start-authentication-with-document-number" th:object="${userDocumentNumberRequest}" method="POST" class="form-action" >
                             <div class="text-center">
                                 <h1>Smart-ID</h1>
                             </div>
 
-                            <div>
+                            <div class="form-group">
                                 <label for="document-number"> Document number</label>
-                                <input type="text" id="document-number" class="form-control" placeholder="Enter document number">
+                                <input  th:field="*{documentNumber}" type="text" id="document-number" class="form-control" placeholder="Enter document number">
                             </div>
 
-                            <div class="text-right pt-3">
+                            <div class="text-right">
                                 <button type="submit" class="btn btn-primary">Authenticate</button>
                             </div>
                         </form>

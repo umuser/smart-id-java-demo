@@ -39,22 +39,22 @@
 <div class="container-fluid d-flex flex-column align-items-center justify-content-center content-area pt-3">
     <div class="container view-content h-100">
         <div class="container">
-            <div class="container d-flex align-items-center justify-content-center qr-area">
-                <img class="img-fluid" id="qr-code" alt="QR code">
-            </div>
             <div class="container text-center mt-3">
                 <p class="responsive-text">
                     Please scan the QR code with the Smart-ID app to proceed
                 </p>
             </div>
+            <div class="container d-flex align-items-center justify-content-center qr-area">
+                <img class="img-fluid" id="qr-code" alt="QR code">
+            </div>
         </div>
 
         <div class="container border-dark pt-3">
             <div class="container text-center">
-               <p>
-                   Link option is only meant to work on mobile device where Smart-ID app is installed.
-                   If app is not available on your device, then link should direct you to the app store.
-               </p>
+                <p>
+                    Link option is only meant to work on mobile device where Smart-ID app is installed.
+                    If app is not available on your device, then link should direct you to the app store.
+                </p>
             </div>
             <div class="container text-center">
                 <a class="btn btn-primary" id="dynamic-link"> To Smart-ID app</a>
@@ -66,6 +66,10 @@
                 </div>
             </div>
         </div>
+<!--        Todo: does not work yet  -->
+<!--        <div class="container text-center">-->
+<!--            <a th:href="@{/v3/cancel-authentication}" class="btn btn-outline-dark">cancel</a>-->
+<!--        </div>-->
     </div>
 </div>
 
