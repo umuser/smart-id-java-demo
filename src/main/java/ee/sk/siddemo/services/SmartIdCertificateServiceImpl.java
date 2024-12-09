@@ -34,9 +34,9 @@ import ee.sk.smartid.exception.useraccount.DocumentUnusableException;
 import ee.sk.smartid.exception.useraccount.UserAccountNotFoundException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v2.SmartIdCertificate;
 import ee.sk.smartid.v2.SmartIdClient;
-import ee.sk.smartid.v2.rest.dao.SemanticsIdentifier;
 
 @Service
 public class SmartIdCertificateServiceImpl implements SmartIdCertificateService {

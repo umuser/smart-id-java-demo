@@ -20,6 +20,7 @@ import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SessionStatusStore;
 import ee.sk.siddemo.services.SmartIdV3AuthenticationService;
+import ee.sk.smartid.AuthenticationIdentity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -106,7 +107,8 @@ public class SmartIdV3Controller {
 
     @GetMapping(value = "/v3/authentication-result")
     public ModelAndView getAuthenticationResult(ModelMap model, HttpSession session) {
-        smartIdV3AuthenticationService.authenticate(session);
+        AuthenticationIdentity authenticationIdentity = smartIdV3AuthenticationService.authenticate(session);
+        model.addAttribute("person", authenticationIdentity);
         return new ModelAndView("v3/authentication-result", model);
     }
 

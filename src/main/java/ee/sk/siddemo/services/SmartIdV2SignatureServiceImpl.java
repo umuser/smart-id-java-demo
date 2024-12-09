@@ -50,6 +50,7 @@ import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.SigningSessionInfo;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.HashType;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v2.SignableData;
 import ee.sk.smartid.v2.SignableHash;
 import ee.sk.smartid.v2.SmartIdCertificate;
@@ -62,7 +63,6 @@ import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.v2.rest.dao.Interaction;
-import ee.sk.smartid.v2.rest.dao.SemanticsIdentifier;
 
 @Service
 public class SmartIdV2SignatureServiceImpl implements SmartIdV2SignatureService {

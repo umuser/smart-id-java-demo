@@ -35,6 +35,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.AuthenticationSessionInfo;
 import ee.sk.siddemo.model.UserRequest;
 
+import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.exception.UnprocessableSmartIdResponseException;
 import ee.sk.smartid.exception.permanent.ServerMaintenanceException;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
@@ -43,13 +44,12 @@ import ee.sk.smartid.exception.useraccount.UserAccountNotFoundException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v2.AuthenticationHash;
-import ee.sk.smartid.v2.AuthenticationIdentity;
 import ee.sk.smartid.v2.AuthenticationResponseValidator;
 import ee.sk.smartid.v2.SmartIdAuthenticationResponse;
 import ee.sk.smartid.v2.SmartIdClient;
 import ee.sk.smartid.v2.rest.dao.Interaction;
-import ee.sk.smartid.v2.rest.dao.SemanticsIdentifier;
 
 @Service
 public class SmartIdV2AuthenticationServiceImpl implements SmartIdV2AuthenticationService {

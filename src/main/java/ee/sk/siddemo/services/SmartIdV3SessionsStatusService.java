@@ -13,6 +13,7 @@ import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
+// TODO - 10.12.24: replace this with sessions status querying
 @Service
 public class SmartIdV3SessionsStatusService {
 

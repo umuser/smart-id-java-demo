@@ -23,8 +23,8 @@ package ee.sk.siddemo.model;
  */
 
 
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v2.AuthenticationHash;
-import ee.sk.smartid.v2.rest.dao.SemanticsIdentifier;
 
 public class AuthenticationSessionInfo {
 

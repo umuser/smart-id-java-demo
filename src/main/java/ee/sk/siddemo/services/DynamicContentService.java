@@ -4,7 +4,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,12 +51,12 @@ public class DynamicContentService {
 
         URI dynamicLink = contentBuilder
                 .withDynamicLinkType(DynamicLinkType.WEB_2_APP)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, SessionType.AUTHENTICATION, sessionSecret, elapsedSeconds))
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, SessionType.AUTHENTICATION, elapsedSeconds, sessionSecret))
                 .createUri();
 
         String qrDataUri = contentBuilder
                 .withDynamicLinkType(DynamicLinkType.QR_CODE)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, SessionType.AUTHENTICATION, sessionSecret, elapsedSeconds))
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, SessionType.AUTHENTICATION, elapsedSeconds, sessionSecret))
                 .createQrCodeDataUri();
         return new DynamicContent(dynamicLink, qrDataUri);
     }

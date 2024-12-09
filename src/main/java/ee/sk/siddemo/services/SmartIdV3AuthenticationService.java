@@ -9,15 +9,18 @@ import org.springframework.stereotype.Service;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.exception.useraccount.DocumentUnusableException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+import ee.sk.smartid.v3.AuthenticationResponseValidator;
+import ee.sk.smartid.v3.DynamicLinkAuthenticationResponse;
+import ee.sk.smartid.v3.DynamicLinkAuthenticationResponseMapper;
 import ee.sk.smartid.v3.DynamicLinkAuthenticationSessionResponse;
 import ee.sk.smartid.v3.RandomChallenge;
 import ee.sk.smartid.v3.SmartIdClient;
-import ee.sk.smartid.v3.rest.dao.Interaction;
-import ee.sk.smartid.v3.rest.dao.SemanticsIdentifier;
+import ee.sk.smartid.v3.rest.dao.DynamicLinkInteraction;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
-import ee.sk.smartid.v3.service.SmartIdRequestBuilderService;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -25,23 +28,24 @@ public class SmartIdV3AuthenticationService {
 
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
-    private final SmartIdRequestBuilderService smartIdRequestBuilderService;
     private final SessionStatusStore sessionStatusStore;
+    private final AuthenticationResponseValidator authenticationResponseValidatorV3;
 
     public SmartIdV3AuthenticationService(SmartIdClient smartIdClientV3,
                                           SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
-                                          SmartIdRequestBuilderService smartIdRequestBuilderService, SessionStatusStore sessionStatusStore) {
+                                          SessionStatusStore sessionStatusStore,
+                                          AuthenticationResponseValidator authenticationResponseValidatorV3) {
         this.smartIdClientV3 = smartIdClientV3;
         this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
-        this.smartIdRequestBuilderService = smartIdRequestBuilderService;
         this.sessionStatusStore = sessionStatusStore;
+        this.authenticationResponseValidatorV3 = authenticationResponseValidatorV3;
     }
 
     public void startAuthentication(HttpSession session) {
         String randomChallenge = RandomChallenge.generate();
         DynamicLinkAuthenticationSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
-                .withAllowedInteractionsOrder(List.of(Interaction.displayTextAndPIN("Login ? ")))
+                .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Login ? ")))
                 .initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -58,7 +62,7 @@ public class SmartIdV3AuthenticationService {
                 .withRandomChallenge(randomChallenge)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withAllowedInteractionsOrder(
-                        List.of(Interaction.displayTextAndPIN("Login ? "))
+                        List.of(DynamicLinkInteraction.displayTextAndPIN("Login ? "))
                 ).initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -74,7 +78,7 @@ public class SmartIdV3AuthenticationService {
                 .withRandomChallenge(randomChallenge)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withAllowedInteractionsOrder(
-                        List.of(Interaction.displayTextAndPIN("Login ? "))
+                        List.of(DynamicLinkInteraction.displayTextAndPIN("Login ? "))
                 ).initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -97,12 +101,19 @@ public class SmartIdV3AuthenticationService {
                 .orElse(false);
     }
 
-    public void authenticate(HttpSession session) {
+    public AuthenticationIdentity authenticate(HttpSession session) {
         SessionStatus sessionsStatusResponse = (SessionStatus) session.getAttribute("session_status_response");
+        String randomChallenge = (String) session.getAttribute("randomChallenge");
+
         try {
-            // TODO - 26.11.24: create authentication response and invalidate current session
-            smartIdRequestBuilderService.createSmartIdAuthenticationResponse(sessionsStatusResponse, "QUALIFIED", null, (String) session.getAttribute("randomChallenge"));
-            // TODO - 26.11.24: clear session status storage
+            // validate sessions status for dynamic link authentication
+            DynamicLinkAuthenticationResponse dynamicLinkAuthenticationResponse = DynamicLinkAuthenticationResponseMapper.from(sessionsStatusResponse);
+
+            // validate and map authentication response to authentication identity
+            AuthenticationIdentity authenticationIdentity = authenticationResponseValidatorV3.from(dynamicLinkAuthenticationResponse, randomChallenge);
+            // invalidate current session after successful authentication
+            session.invalidate();
+            return authenticationIdentity;
         } catch (DocumentUnusableException ex) {
             throw new SidOperationException("Invalid authentication response", ex);
         } catch (SessionTimeoutException ex) {

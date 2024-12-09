@@ -24,7 +24,7 @@ package ee.sk.siddemo.services;
 
 import ee.sk.siddemo.model.AuthenticationSessionInfo;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.smartid.v2.AuthenticationIdentity;
+import ee.sk.smartid.AuthenticationIdentity;
 
 public interface SmartIdV2AuthenticationService {
 

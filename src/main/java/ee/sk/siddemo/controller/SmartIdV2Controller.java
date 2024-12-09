@@ -43,7 +43,7 @@ import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.model.UserSidSession;
 import ee.sk.siddemo.services.SmartIdV2AuthenticationService;
 import ee.sk.siddemo.services.SmartIdV2SignatureService;
-import ee.sk.smartid.v2.AuthenticationIdentity;
+import ee.sk.smartid.AuthenticationIdentity;
 import jakarta.validation.Valid;
 
 @RestController

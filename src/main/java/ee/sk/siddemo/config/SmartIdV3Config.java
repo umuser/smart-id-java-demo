@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import ee.sk.smartid.v3.AuthenticationResponseValidator;
 import ee.sk.smartid.v3.SmartIdClient;
-import ee.sk.smartid.v3.service.SmartIdRequestBuilderService;
 
 @Configuration
 public class SmartIdV3Config {
@@ -32,6 +32,13 @@ public class SmartIdV3Config {
     @Value("${sid.v3.client.polling-timeout-in-seconds}")
     private Integer sidPollingTimeout;
 
+    @Value("${sid.v3.truststore.trusted-root-certs.filename}")
+    private String sidTrustedRootCertsFilename;
+
+    @Value("${sid.v3.truststore.trusted-root-certs.password}")
+    private String sidTrustedRootCertsPassword;
+
+
     @Bean
     public SmartIdClient smartIdClientV3() throws Exception {
         InputStream is = SmartIdV3Config.class.getResourceAsStream(sidTrustedServerSslCertsFilename);
@@ -50,7 +57,7 @@ public class SmartIdV3Config {
     }
 
     @Bean
-    public SmartIdRequestBuilderService smartIdRequestBuilderService() {
-        return new SmartIdRequestBuilderService();
+    public AuthenticationResponseValidator authenticationResponseValidatorV3() {
+        return new AuthenticationResponseValidator(sidTrustedRootCertsFilename, sidTrustedRootCertsPassword);
     }
 }
