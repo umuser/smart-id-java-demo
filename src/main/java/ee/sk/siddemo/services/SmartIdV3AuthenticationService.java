@@ -110,7 +110,7 @@ public class SmartIdV3AuthenticationService {
             DynamicLinkAuthenticationResponse dynamicLinkAuthenticationResponse = DynamicLinkAuthenticationResponseMapper.from(sessionsStatusResponse);
 
             // validate and map authentication response to authentication identity
-            AuthenticationIdentity authenticationIdentity = authenticationResponseValidatorV3.from(dynamicLinkAuthenticationResponse, randomChallenge);
+            AuthenticationIdentity authenticationIdentity = authenticationResponseValidatorV3.toAuthenticationIdentity(dynamicLinkAuthenticationResponse, randomChallenge);
             // invalidate current session after successful authentication
             session.invalidate();
             return authenticationIdentity;

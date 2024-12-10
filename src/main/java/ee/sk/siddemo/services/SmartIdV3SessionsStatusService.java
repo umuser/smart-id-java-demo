@@ -39,7 +39,7 @@ public class SmartIdV3SessionsStatusService {
                 if (Thread.currentThread().isInterrupted()) {
                     throw new InterruptedException("Task was interrupted");
                 }
-                return smartIdClientV3.createSessionStatusPoller().fetchFinalSessionStatus(sessionId);
+                return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(sessionId);
             } catch (SmartIdClientException ex) {
                 logger.error("Error occurred while fetching session status", ex);
                 throw new RuntimeException(ex);
