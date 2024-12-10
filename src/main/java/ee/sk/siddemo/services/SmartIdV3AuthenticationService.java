@@ -16,10 +16,10 @@ import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.AuthenticationResponseValidator;
 import ee.sk.smartid.v3.DynamicLinkAuthenticationResponse;
 import ee.sk.smartid.v3.DynamicLinkAuthenticationResponseMapper;
-import ee.sk.smartid.v3.DynamicLinkAuthenticationSessionResponse;
 import ee.sk.smartid.v3.RandomChallenge;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.DynamicLinkInteraction;
+import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -43,7 +43,7 @@ public class SmartIdV3AuthenticationService {
 
     public void startAuthentication(HttpSession session) {
         String randomChallenge = RandomChallenge.generate();
-        DynamicLinkAuthenticationSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
+        DynamicLinkSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Login ? ")))
                 .initAuthenticationSession();
@@ -58,7 +58,7 @@ public class SmartIdV3AuthenticationService {
         String randomChallenge = RandomChallenge.generate();
         SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
 
-        DynamicLinkAuthenticationSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
+        DynamicLinkSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withAllowedInteractionsOrder(
@@ -74,7 +74,7 @@ public class SmartIdV3AuthenticationService {
     public void startAuthentication(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         String randomChallenge = RandomChallenge.generate();
 
-        DynamicLinkAuthenticationSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
+        DynamicLinkSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withAllowedInteractionsOrder(
@@ -121,7 +121,7 @@ public class SmartIdV3AuthenticationService {
         }
     }
 
-    private static void updateSession(HttpSession session, String randomChallenge, DynamicLinkAuthenticationSessionResponse response, Instant responseReceivedTime) {
+    private static void updateSession(HttpSession session, String randomChallenge, DynamicLinkSessionResponse response, Instant responseReceivedTime) {
         session.setAttribute("randomChallenge", randomChallenge);
         session.setAttribute("sessionSecret", response.getSessionSecret());
         session.setAttribute("sessionToken", response.getSessionToken());

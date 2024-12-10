@@ -8,8 +8,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
-import ee.sk.smartid.v3.DynamicLinkAuthenticationSessionResponse;
 import ee.sk.smartid.v3.SmartIdClient;
+import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -28,7 +28,7 @@ public class SmartIdV3SessionsStatusService {
     }
 
     @Async
-    public void startPolling(HttpSession session, DynamicLinkAuthenticationSessionResponse response) {
+    public void startPolling(HttpSession session, DynamicLinkSessionResponse response) {
         CompletableFuture<SessionStatus> sessionStatusFuture = initPolling(response.getSessionID());
         sessionStatusStore.addSession(session.getId(), sessionStatusFuture);
     }
