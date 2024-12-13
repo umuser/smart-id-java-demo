@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,8 @@ import jakarta.servlet.http.HttpSession;
 @Service
 public class SmartIdV3AuthenticationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3AuthenticationService.class);
+
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
     private final AuthenticationResponseValidator authenticationResponseValidatorV3;
@@ -48,6 +52,7 @@ public class SmartIdV3AuthenticationService {
         DynamicLinkSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN(displayText)))
+                .withShareMdClientIpAddress(true)
                 .initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -64,6 +69,7 @@ public class SmartIdV3AuthenticationService {
                 .withRandomChallenge(randomChallenge)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN(displayText)))
+                .withShareMdClientIpAddress(true)
                 .initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -78,6 +84,7 @@ public class SmartIdV3AuthenticationService {
                 .withRandomChallenge(randomChallenge)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN(displayText)))
+                .withShareMdClientIpAddress(true)
                 .initAuthenticationSession();
         Instant responseReceivedTime = Instant.now();
 
@@ -93,6 +100,7 @@ public class SmartIdV3AuthenticationService {
                     if (status.getState().equals("COMPLETE")) {
                         saveValidateResponse(session, status);
                         session.setAttribute("session_status", "COMPLETED");
+                        logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
                         return true;
                     }
                     return false;
