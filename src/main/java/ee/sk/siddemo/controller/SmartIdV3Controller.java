@@ -1,7 +1,5 @@
 package ee.sk.siddemo.controller;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -11,15 +9,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
-import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.siddemo.services.DynamicContentService;
-import ee.sk.siddemo.services.SessionStatusStore;
 import ee.sk.siddemo.services.SmartIdV3AuthenticationService;
+import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.AuthenticationIdentity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -28,18 +23,13 @@ import jakarta.validation.Valid;
 @Controller
 public class SmartIdV3Controller {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3Controller.class);
-
     private final SmartIdV3AuthenticationService smartIdV3AuthenticationService;
-    private final DynamicContentService dynamicContentService;
-    private final SessionStatusStore sessionStatusStore;
+    private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
 
     public SmartIdV3Controller(SmartIdV3AuthenticationService smartIdV3AuthenticationService,
-                               DynamicContentService dynamicContentService,
-                               SessionStatusStore sessionStatusStore) {
+                               SmartIdV3SessionsStatusService smartIdV3SessionsStatusService) {
         this.smartIdV3AuthenticationService = smartIdV3AuthenticationService;
-        this.dynamicContentService = dynamicContentService;
-        this.sessionStatusStore = sessionStatusStore;
+        this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
     }
 
     @ModelAttribute("userRequest")
@@ -53,7 +43,7 @@ public class SmartIdV3Controller {
     }
 
     @GetMapping(value = "/rp-api-v3")
-    public String userRequestForm(Model model) {
+    public String viewRpApiV3Tab(Model model) {
         model.addAttribute("activeTab", "rp-api-v3");
         return "v3/main";
     }
@@ -92,19 +82,6 @@ public class SmartIdV3Controller {
         return new ModelAndView("v3/authentication", model);
     }
 
-    @GetMapping(value = "/v3/check-authentication-status")
-    @ResponseBody
-    public Map<String, Object> checkAuthenticationStatus(HttpSession session) {
-        boolean checkCompleted = smartIdV3AuthenticationService.checkAuthenticationStatus(session);
-        if (checkCompleted) {
-            logger.debug("Session status: COMPLETED");
-            return Map.of("sessionStatus", "COMPLETED");
-        }
-        logger.debug("Update dynamic content");
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session);
-        return Map.of("dynamicLink", dynamicContent.getDynamicLink().toString(), "qrCode", dynamicContent.getQrCode());
-    }
-
     @GetMapping(value = "/v3/authentication-result")
     public ModelAndView getAuthenticationResult(ModelMap model, HttpSession session) {
         AuthenticationIdentity authenticationIdentity = smartIdV3AuthenticationService.authenticate(session);
@@ -121,7 +98,7 @@ public class SmartIdV3Controller {
     private HttpSession resetSession(HttpServletRequest request) {
         HttpSession session = request.getSession();
         if (session != null) {
-            sessionStatusStore.removeSession(session.getId());
+            smartIdV3SessionsStatusService.cancelPolling(session.getId());
             session.invalidate();
         }
         // Create a new session

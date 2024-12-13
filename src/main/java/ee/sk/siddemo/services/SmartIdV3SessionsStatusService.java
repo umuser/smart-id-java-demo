@@ -1,10 +1,15 @@
 package ee.sk.siddemo.services;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
@@ -13,40 +18,51 @@ import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
-// TODO - 10.12.24: replace this with sessions status querying
 @Service
 public class SmartIdV3SessionsStatusService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3SessionsStatusService.class);
 
+    private final Map<String, Future<?>> sessions = new ConcurrentHashMap<>();
+
     private final SmartIdClient smartIdClientV3;
-    private final SessionStatusStore sessionStatusStore;
 
-    public SmartIdV3SessionsStatusService(SmartIdClient smartIdClientV3, SessionStatusStore sessionStatusStore) {
+    public SmartIdV3SessionsStatusService(SmartIdClient smartIdClientV3) {
         this.smartIdClientV3 = smartIdClientV3;
-        this.sessionStatusStore = sessionStatusStore;
     }
 
-    @Async
-    public void startPolling(HttpSession session, DynamicLinkSessionResponse response) {
-        CompletableFuture<SessionStatus> sessionStatusFuture = initPolling(response.getSessionID());
-        sessionStatusStore.addSession(session.getId(), sessionStatusFuture);
+    public void startPolling(HttpSession httpSession, DynamicLinkSessionResponse response) {
+        Callable<SessionStatus> task = () -> initPolling(response.getSessionID());
+        Future<?> future = Executors.newSingleThreadExecutor().submit(task);
+        sessions.put(httpSession.getId(), future);
     }
 
-    private CompletableFuture<SessionStatus> initPolling(String sessionId) {
-        return CompletableFuture.supplyAsync(() -> {
+    public Optional<SessionStatus> getSessionsStatus(String sessionId) {
+        Future<?> session = sessions.get(sessionId);
+        if (session != null && session.isDone()) {
             try {
-                if (Thread.currentThread().isInterrupted()) {
-                    throw new InterruptedException("Task was interrupted");
-                }
-                return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(sessionId);
-            } catch (SmartIdClientException ex) {
-                logger.error("Error occurred while fetching session status", ex);
+                return Optional.of((SessionStatus) session.get());
+            } catch (InterruptedException | ExecutionException ex) {
                 throw new RuntimeException(ex);
-            } catch (InterruptedException ex) {
-                logger.debug("Polling was interrupted", ex);
-                return null;
             }
-        });
+        }
+        return Optional.empty();
+    }
+
+    public void cancelPolling(String sessionId) {
+        Future<?> future = sessions.get(sessionId);
+        if (future != null) {
+            future.cancel(true);
+            sessions.remove(sessionId);
+        }
+    }
+
+    private SessionStatus initPolling(String sessionId) {
+        try {
+            return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(sessionId);
+        } catch (SmartIdClientException ex) {
+            logger.error("Error occurred while fetching session status", ex);
+            throw new RuntimeException(ex);
+        }
     }
 }

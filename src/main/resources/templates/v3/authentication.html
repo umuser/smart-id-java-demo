@@ -66,10 +66,9 @@
                 </div>
             </div>
         </div>
-<!--        Todo: does not work yet  -->
-<!--        <div class="container text-center">-->
-<!--            <a th:href="@{/v3/cancel-authentication}" class="btn btn-outline-dark">cancel</a>-->
-<!--        </div>-->
+        <div class="container text-center">
+            <a th:href="@{/v3/cancel-authentication}" class="btn btn-outline-dark">Cancel</a>
+        </div>
     </div>
 </div>
 
@@ -79,19 +78,20 @@
         fetch('/v3/check-authentication-status')
             .then(response => response.json())
             .then(data => {
-                if (data.sessionStatus === 'COMPLETED') {
-                    console.log('Session completed');
+                if (data.errorMessage !== undefined) {
+                    window.location.href = '/auth-session-error?errorMessage=' + data.errorMessage;
+                } else if (data.sessionStatus === 'COMPLETED') {
                     window.location.href = '/v3/authentication-result';
                 } else {
-                    console.log("Session data: " + data);
                     document.getElementById("qr-code").src = data.qrCode;
                     document.getElementById("dynamic-link").href = data.dynamicLink;
                     document.getElementById("link-content").innerText = data.dynamicLink;
                     setTimeout(loadContent, 1000);
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.log('Error:', error));
     }
+
     window.onload = loadContent;
 </script>
 </body>

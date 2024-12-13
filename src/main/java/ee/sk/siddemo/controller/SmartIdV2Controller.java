@@ -145,7 +145,7 @@ public class SmartIdV2Controller {
 
         var model = new ModelMap();
 
-        model.addAttribute("errorMessage", exception.getMessage());
+        model.addAttribute("message", exception.getMessage());
 
         return new ModelAndView("error", model);
     }

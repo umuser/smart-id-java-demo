@@ -29,8 +29,11 @@ sid:
       relyingPartyUuid: ${SID_RELYING_PARTY_UUID}
       relyingPartyName: ${SID_RELYING_PARTY_NAME}
       applicationProviderHost: https://sid.demo.sk.ee/smart-id-rp/v3/
-      polling-timeout-in-seconds: 2
+      polling-timeout-in-seconds: 5
       dynamic-link-url: https://sid.demo.sk.ee/dynamic-link/
+      open-socket-timeout-in-seconds: 1
+    auth:
+      displayText: Log in with Smart-ID demo?
     truststore:
       trusted-server-ssl-certs:
         filename: /sid.trusted_server_certs.p12

@@ -32,6 +32,9 @@ public class SmartIdV3Config {
     @Value("${sid.v3.client.polling-timeout-in-seconds}")
     private Integer sidPollingTimeout;
 
+    @Value("${sid.v3.client.open-socket-timeout-in-seconds}")
+    private Integer sidOpenSocketTimeout;
+
     @Value("${sid.v3.truststore.trusted-root-certs.filename}")
     private String sidTrustedRootCertsFilename;
 
@@ -52,6 +55,7 @@ public class SmartIdV3Config {
         client.setHostUrl(sidApplicationProviderHost);
         client.setTrustStore(trustStore);
         client.setPollingSleepTimeout(TimeUnit.SECONDS, sidPollingTimeout);
+        client.setSessionStatusResponseSocketOpenTime(TimeUnit.SECONDS, sidOpenSocketTimeout);
 
         return client;
     }
