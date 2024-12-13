@@ -41,7 +41,6 @@ public class SmartIdV3Config {
     @Value("${sid.v3.truststore.trusted-root-certs.password}")
     private String sidTrustedRootCertsPassword;
 
-
     @Bean
     public SmartIdClient smartIdClientV3() throws Exception {
         InputStream is = SmartIdV3Config.class.getResourceAsStream(sidTrustedServerSslCertsFilename);
