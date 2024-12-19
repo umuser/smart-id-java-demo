@@ -20,15 +20,15 @@ import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
 @Service
-public class SmartIdV3CertificateChoiceService {
+public class SmartIdV3DynamicLinkCertificateChoiceService {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3CertificateChoiceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkCertificateChoiceService.class);
 
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
 
-    public SmartIdV3CertificateChoiceService(SmartIdClient smartIdClientV3,
-                                             SmartIdV3SessionsStatusService smartIdV3SessionsStatusService) {
+    public SmartIdV3DynamicLinkCertificateChoiceService(SmartIdClient smartIdClientV3,
+                                                        SmartIdV3SessionsStatusService smartIdV3SessionsStatusService) {
         this.smartIdClientV3 = smartIdClientV3;
         this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
     }

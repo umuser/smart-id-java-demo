@@ -32,7 +32,11 @@ public class SmartIdV3SessionsStatusService {
     }
 
     public void startPolling(HttpSession httpSession, DynamicLinkSessionResponse response) {
-        Callable<SessionStatus> task = () -> initPolling(response.getSessionID());
+        startPolling(httpSession, response.getSessionID());
+    }
+
+    public void startPolling(HttpSession httpSession, String sessionId) {
+        Callable<SessionStatus> task = () -> initPolling(sessionId);
         Future<?> future = Executors.newSingleThreadExecutor().submit(task);
         sessions.put(httpSession.getId(), future);
     }

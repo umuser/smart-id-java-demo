@@ -9,51 +9,62 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
+import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
-import ee.sk.siddemo.services.SmartIdV3CertificateChoiceService;
+import ee.sk.siddemo.services.SmartIdV3NotificationBasedCertificateChoiceService;
 import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.v3.SessionType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
-public class SmartIdV3CertificateChoiceController {
+public class SmartIdV3NotificationBasedCertificateChoiceController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3CertificateChoiceController.class);
+    private final Logger logger = LoggerFactory.getLogger(SmartIdV3NotificationBasedCertificateChoiceController.class);
 
-    private final SmartIdV3CertificateChoiceService smartIdV3CertificateChoiceService;
+    private final SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
     private final DynamicContentService dynamicContentService;
 
-    public SmartIdV3CertificateChoiceController(SmartIdV3CertificateChoiceService smartIdV3CertificateChoiceService,
-                                                SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
-                                                DynamicContentService dynamicContentService) {
-        this.smartIdV3CertificateChoiceService = smartIdV3CertificateChoiceService;
+    public SmartIdV3NotificationBasedCertificateChoiceController(SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService,
+                                                                 SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
+                                                                 DynamicContentService dynamicContentService) {
+        this.smartIdV3NotificationBasedCertificateChoiceService = smartIdV3NotificationBasedCertificateChoiceService;
         this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
         this.dynamicContentService = dynamicContentService;
     }
 
-    @GetMapping(value = "/v3/start-certificate-choice")
-    public ModelAndView startCertificateChoice(ModelMap model, HttpServletRequest request) {
+
+    @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-person-code")
+    public ModelAndView startNotificationCertificateChoiceWithPersonCode(ModelMap model,
+                                                                         HttpServletRequest request,
+                                                                         @ModelAttribute("certUserRequest") @Valid UserRequest certUserRequest,
+                                                                         BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return new ModelAndView("v3/main", "certUserRequest", certUserRequest);
+        }
         HttpSession session = resetSession(request);
-        smartIdV3CertificateChoiceService.startCertificateChoice(session);
+        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, certUserRequest);
         model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/certificate-choice", model);
+        return new ModelAndView("v3/notification-based/certificate-choice", model);
     }
 
-    @GetMapping(value = "/v3/check-certificate-choice-status")
+    @GetMapping(value = "/v3/notification-based/check-certificate-choice-status")
     @ResponseBody
     public ResponseEntity<Map<String, String>> checkCertificateChoiceStatus(HttpSession session) {
         boolean checkCompleted;
         try {
-            checkCompleted = smartIdV3CertificateChoiceService.checkCertificateChoiceStatus(session);
+            checkCompleted = smartIdV3NotificationBasedCertificateChoiceService.checkCertificateChoiceStatus(session);
         } catch (SidOperationException ex) {
             logger.error("Error occurred while checking authentication status", ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("errorMessage", ex.getMessage()));
@@ -72,24 +83,17 @@ public class SmartIdV3CertificateChoiceController {
         return ResponseEntity.ok(content);
     }
 
-    @GetMapping(value = "/certificate-choice-session-error")
-    public ModelAndView handleCertificateChoiceSessionsError(@RequestParam(value = "errorMessage", required = false) String errorMessage,
-                                                          ModelMap model) {
-        model.addAttribute("errorMessage", errorMessage);
-        return new ModelAndView("sidOperationError", model);
-    }
-
-    @GetMapping(value = "/v3/certificate-choice-result")
+    @GetMapping(value = "/v3/notification-based/certificate-choice-result")
     public ModelAndView getAuthenticationResult(ModelMap model, HttpSession session) {
         String documentNumber = (String) session.getAttribute("documentNumber");
         String distinguishedName = (String) session.getAttribute("distinguishedName");
         model.addAttribute("documentNumber", documentNumber);
         model.addAttribute("distinguishedName", distinguishedName);
         model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/certificate-choice-result", model);
+        return new ModelAndView("v3/notification-based/certificate-choice-result", model);
     }
 
-    @GetMapping(value = "/v3/cancel-certificate-choice")
+    @GetMapping(value = "/v3/notification-based/cancel-certificate-choice")
     public ModelAndView cancelAuthentication(ModelMap model, HttpServletRequest request) {
         resetSession(request);
         model.addAttribute("activeTab", "rp-api-v3");
