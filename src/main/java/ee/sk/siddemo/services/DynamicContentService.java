@@ -4,7 +4,7 @@ package ee.sk.siddemo.services;
  * #%L
  * Smart-ID sample Java client
  * %%
- * Copyright (C) 2018 - 2024 SK ID Solutions AS
+ * Copyright (C) 2018 - 2025 SK ID Solutions AS
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -67,6 +67,7 @@ public class DynamicContentService {
 
         DynamicContentBuilder contentBuilder = smartIdClientV3.createDynamicContent()
                 .withBaseUrl(dynamicLinkUrl)
+                .withSessionType(SessionType.AUTHENTICATION)
                 .withSessionType(sessionType)
                 .withSessionToken(sessionToken)
                 .withElapsedSeconds(elapsedSeconds);

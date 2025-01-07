@@ -61,7 +61,6 @@ public class SmartIdCertificateServiceImpl implements SmartIdCertificateService 
                     userRequest.getCountry(), // 2 character ISO 3166-1 alpha-2 country code
                     userRequest.getNationalIdentityNumber());
 
-
             SmartIdCertificate responseWithSigningCertificate = smartIdClientV2
                     .getCertificate()
                     .withSemanticsIdentifier(semanticsIdentifier)

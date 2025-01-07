@@ -4,7 +4,7 @@ package ee.sk.siddemo.services;
  * #%L
  * Smart-ID sample Java client
  * %%
- * Copyright (C) 2018 - 2024 SK ID Solutions AS
+ * Copyright (C) 2018 - 2025 SK ID Solutions AS
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as
@@ -85,7 +85,7 @@ public class SmartIdV3AuthenticationService {
 
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
         String randomChallenge = RandomChallenge.generate();
-        SemanticsIdentifier semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
+        var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
 
         DynamicLinkSessionResponse response = smartIdClientV3.createDynamicLinkAuthentication()
                 .withRandomChallenge(randomChallenge)
@@ -130,16 +130,6 @@ public class SmartIdV3AuthenticationService {
                 .orElse(false);
     }
 
-    private static void saveValidateResponse(HttpSession session, SessionStatus status) {
-        try {
-            // validate sessions status for dynamic link authentication
-            var dynamicLinkAuthenticationResponse = DynamicLinkAuthenticationResponseMapper.from(status);
-            session.setAttribute("authentication_response", dynamicLinkAuthenticationResponse);
-        } catch (SessionTimeoutException ex) {
-            throw new SidOperationException("Session timed out", ex);
-        }
-    }
-
     public AuthenticationIdentity authenticate(HttpSession session) {
         // validate sessions status for dynamic link authentication
         DynamicLinkAuthenticationResponse response = (DynamicLinkAuthenticationResponse) session.getAttribute("authentication_response");
@@ -164,5 +154,15 @@ public class SmartIdV3AuthenticationService {
         session.setAttribute("sessionToken", response.getSessionToken());
         session.setAttribute("sessionID", response.getSessionID());
         session.setAttribute("responseReceivedTime", responseReceivedTime);
+    }
+
+    private static void saveValidateResponse(HttpSession session, SessionStatus status) {
+        try {
+            // validate sessions status for dynamic link authentication
+            var dynamicLinkAuthenticationResponse = DynamicLinkAuthenticationResponseMapper.from(status);
+            session.setAttribute("authentication_response", dynamicLinkAuthenticationResponse);
+        } catch (SessionTimeoutException ex) {
+            throw new SidOperationException("Session timed out", ex);
+        }
     }
 }
