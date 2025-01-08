@@ -73,7 +73,7 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-person-code-authentication">
-                                    <form action="v3/start-authentication-with-person-code" th:object="${userRequest}" method="POST"
+                                    <form method="POST" th:action="@{/v3/start-authentication-with-person-code}" th:object="${userRequest}"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -107,8 +107,8 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-document-number-authentication">
-                                    <form action="v3/start-authentication-with-document-number" th:object="${userDocumentNumberRequest}"
-                                          method="POST"
+                                    <form method="POST" th:action="@{/v3/start-authentication-with-document-number}"
+                                          th:object="${userDocumentNumberRequest}"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
