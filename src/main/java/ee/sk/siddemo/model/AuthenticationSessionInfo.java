@@ -22,6 +22,7 @@ package ee.sk.siddemo.model;
  * #L%
  */
 
+
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v2.AuthenticationHash;
 

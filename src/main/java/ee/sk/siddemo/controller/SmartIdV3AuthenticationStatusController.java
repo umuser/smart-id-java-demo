@@ -39,6 +39,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdV3AuthenticationService;
+import ee.sk.smartid.v3.SessionType;
 import jakarta.servlet.http.HttpSession;
 
 @RestController
@@ -71,7 +72,7 @@ public class SmartIdV3AuthenticationStatusController {
 
         // Generate QR-code and dynamic link
         logger.debug("Generate dynamic content for session {}", session.getId());
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session);
+        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.AUTHENTICATION);
         Map<String, String> content = new HashMap<>();
         content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
         content.put("qrCode", dynamicContent.getQrCode());

@@ -53,32 +53,33 @@ public class DynamicContentService {
         this.smartIdClientV3 = smartIdClientV3;
     }
 
-    public DynamicContent getDynamicContent(HttpSession session) {
+    public DynamicContent getDynamicContent(HttpSession session, SessionType sessionType) {
         String sessionSecret = (String) session.getAttribute("sessionSecret");
         String sessionToken = (String) session.getAttribute("sessionToken");
         Instant responseReceivedTime = (Instant) session.getAttribute("responseReceivedTime");
 
-        return getDynamicContent(sessionToken, sessionSecret, responseReceivedTime);
+        return getDynamicContent(sessionType, sessionToken, sessionSecret, responseReceivedTime);
     }
 
-    public DynamicContent getDynamicContent(String sessionToken, String sessionSecret, Instant responseReceivedTime) {
+    public DynamicContent getDynamicContent(SessionType sessionType, String sessionToken, String sessionSecret, Instant responseReceivedTime) {
         long elapsedSeconds = Duration.between(responseReceivedTime, Instant.now()).getSeconds();
         logger.info("Dynamic content elapsed seconds: {}", elapsedSeconds);
 
         DynamicContentBuilder contentBuilder = smartIdClientV3.createDynamicContent()
                 .withBaseUrl(dynamicLinkUrl)
                 .withSessionType(SessionType.AUTHENTICATION)
+                .withSessionType(sessionType)
                 .withSessionToken(sessionToken)
                 .withElapsedSeconds(elapsedSeconds);
 
         URI dynamicLink = contentBuilder
                 .withDynamicLinkType(DynamicLinkType.WEB_2_APP)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, SessionType.AUTHENTICATION, elapsedSeconds, sessionSecret))
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, sessionType, elapsedSeconds, sessionSecret))
                 .createUri();
 
         String qrDataUri = contentBuilder
                 .withDynamicLinkType(DynamicLinkType.QR_CODE)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, SessionType.AUTHENTICATION, elapsedSeconds, sessionSecret))
+                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, sessionType, elapsedSeconds, sessionSecret))
                 .createQrCodeDataUri();
         return new DynamicContent(dynamicLink, qrDataUri);
     }
