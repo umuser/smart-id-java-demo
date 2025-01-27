@@ -1,6 +1,8 @@
 package ee.sk.siddemo.services;
 
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -24,6 +26,8 @@ import jakarta.validation.Valid;
 public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3NotificationBasedCertificateChoiceService.class);
+
+    private static final Map<String, String> oidMap = Map.of("2.5.4.5", "serialNumber", "2.5.4.42", "givenName", "2.5.4.4", "surname");
 
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
@@ -61,15 +65,12 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
-            // validate sessions status does not contain errors
             if (!"OK".equals(status.getResult().getEndResult())) {
                 ErrorResultHandler.handle(status.getResult().getEndResult());
             }
-            // TODO - 17.12.24: uncomment when anonymous certificate choice is supported by RP API v3
             X509Certificate certificate = CertificateParser.parseX509Certificate(status.getCert().getValue());
-            String distinguishedName = certificate.getSubjectX500Principal().getName();
+            String distinguishedName = certificate.getSubjectX500Principal().getName("RFC1779", oidMap);
             session.setAttribute("distinguishedName", distinguishedName);
-            session.setAttribute("documentNumber", status.getResult().getDocumentNumber());
         } catch (SessionTimeoutException ex) {
             throw new SidOperationException("Session timed out", ex);
         }

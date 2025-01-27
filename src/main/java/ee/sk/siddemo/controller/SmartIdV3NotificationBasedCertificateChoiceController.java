@@ -1,6 +1,5 @@
 package ee.sk.siddemo.controller;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -17,12 +16,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
-import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdV3NotificationBasedCertificateChoiceService;
 import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
-import ee.sk.smartid.v3.SessionType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -34,16 +30,12 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
 
     private final SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
-    private final DynamicContentService dynamicContentService;
 
     public SmartIdV3NotificationBasedCertificateChoiceController(SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService,
-                                                                 SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
-                                                                 DynamicContentService dynamicContentService) {
+                                                                 SmartIdV3SessionsStatusService smartIdV3SessionsStatusService) {
         this.smartIdV3NotificationBasedCertificateChoiceService = smartIdV3NotificationBasedCertificateChoiceService;
         this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
-        this.dynamicContentService = dynamicContentService;
     }
-
 
     @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-person-code")
     public ModelAndView startNotificationCertificateChoiceWithPersonCode(ModelMap model,
@@ -73,21 +65,15 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
-
-        // Generate QR-code and dynamic link
-        logger.debug("Generate dynamic content for session {}", session.getId());
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.CERTIFICATE_CHOICE);
-        Map<String, String> content = new HashMap<>();
-        content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
-        content.put("qrCode", dynamicContent.getQrCode());
-        return ResponseEntity.ok(content);
+        return ResponseEntity.ok(Map.of("sessionStatus", "IN_PROGRESS"));
     }
 
     @GetMapping(value = "/v3/notification-based/certificate-choice-result")
     public ModelAndView getAuthenticationResult(ModelMap model, HttpSession session) {
-        String documentNumber = (String) session.getAttribute("documentNumber");
         String distinguishedName = (String) session.getAttribute("distinguishedName");
-        model.addAttribute("documentNumber", documentNumber);
+        if (distinguishedName == null) {
+            return new ModelAndView("v3/main", model);
+        }
         model.addAttribute("distinguishedName", distinguishedName);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice-result", model);
