@@ -12,7 +12,7 @@
 
 
     <!-- LOG everything at INFO level -->
-    <root level="trace">
+    <root level="info">
         <appender-ref ref="Console" />
     </root>
 

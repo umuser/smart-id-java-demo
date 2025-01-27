@@ -73,9 +73,9 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-person-code-authentication">
-                                    <form action="v3/start-authentication-with-person-code"
+                                    <form method="POST"
+                                          th:action="@{/v3/start-authentication-with-person-code}"
                                           th:object="${authUserRequest}"
-                                          method="POST"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -109,8 +109,9 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-document-number-authentication">
-                                    <form action="v3/start-authentication-with-document-number" th:object="${userDocumentNumberRequest}"
-                                          method="POST"
+                                    <form method="POST"
+                                          th:action="@{/v3/start-authentication-with-document-number}"
+                                          th:object="${userDocumentNumberRequest}"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -170,6 +171,9 @@
                                     <div class="text-center">
                                         <h1>Smart-ID</h1>
                                         <a th:href="@{/v3/dynamic-link/start-certificate-choice}" class="btn btn-primary">Certificate choice</a>
+                                        <p class="text-danger"> Anonymous certificate choice uses dummy data to generate dynamic links and QR codes.
+                                            At this moment, no sessions are being created.
+                                        </p>
                                         <p>
                                             Certificate choice should be used with signing a file. For testing purposes this demo is provided
                                             for only testing this single flow
@@ -178,9 +182,9 @@
                                 </div>
 
                                 <div class="container d-none certification-choice-area" id="person-code-certificate-choice">
-                                    <form action="/v3/notification-based/start-certificate-choice-with-person-code"
+                                    <form method="POST"
+                                          th:action="@{/v3/notification-based/start-certificate-choice-with-person-code}"
                                           th:object="${certUserRequest}"
-                                          method="POST"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -270,7 +274,6 @@
             let area = document.getElementById(areaId);
             area.classList.add('active');
             area.classList.remove('d-none');
-
         }
     });
 
