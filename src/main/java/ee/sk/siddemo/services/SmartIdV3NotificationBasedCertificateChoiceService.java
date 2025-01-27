@@ -1,7 +1,6 @@
 package ee.sk.siddemo.services;
 
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -10,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateParser;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -43,6 +43,15 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
         NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
                 .withCertificateLevel(CertificateLevel.QSCD)
                 .withSemanticsIdentifier(semanticsIdentifier)
+                .initCertificateChoice();
+
+        smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
+    }
+
+    public void startCertificateChoice(HttpSession session, @Valid UserDocumentNumberRequest userDocumentNumberRequest) {
+        NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
+                .withCertificateLevel(CertificateLevel.QUALIFIED)
+                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .initCertificateChoice();
 
         smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());

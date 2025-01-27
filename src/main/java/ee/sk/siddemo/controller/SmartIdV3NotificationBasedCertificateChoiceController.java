@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.SmartIdV3NotificationBasedCertificateChoiceService;
 import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
@@ -47,6 +48,20 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
         }
         HttpSession session = resetSession(request);
         smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, certUserRequest);
+        model.addAttribute("activeTab", "rp-api-v3");
+        return new ModelAndView("v3/notification-based/certificate-choice", model);
+    }
+
+    @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-document-number")
+    public ModelAndView startNotificationCertificateChoiceWithDocumentNumber(ModelMap model,
+                                                                         HttpServletRequest request,
+                                                                         @ModelAttribute("userDocumentNumberRequest") @Valid UserDocumentNumberRequest userDocumentNumberRequest,
+                                                                         BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return new ModelAndView("v3/main", "userDocumentNumberRequest", userDocumentNumberRequest);
+        }
+        HttpSession session = resetSession(request);
+        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice", model);
     }
