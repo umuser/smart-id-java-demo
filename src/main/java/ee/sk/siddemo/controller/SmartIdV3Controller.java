@@ -52,13 +52,8 @@ public class SmartIdV3Controller {
         this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
     }
 
-    @ModelAttribute("certUserRequest")
-    public UserRequest certUserRequest() {
-        return new UserRequest();
-    }
-
-    @ModelAttribute("authUserRequest")
-    public UserRequest authUserRequest() {
+    @ModelAttribute("userRequest")
+    public UserRequest userRequest() {
         return new UserRequest();
     }
 

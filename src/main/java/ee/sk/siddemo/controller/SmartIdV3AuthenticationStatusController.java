@@ -81,7 +81,7 @@ public class SmartIdV3AuthenticationStatusController {
 
     @GetMapping(value = "/auth-session-error")
     public ModelAndView handleAuthenticationSessionErrors(@RequestParam(value = "errorMessage", required = false) String errorMessage,
-                                                    ModelMap model) {
+                                                          ModelMap model) {
         model.addAttribute("errorMessage", errorMessage);
         return new ModelAndView("sidOperationError", model);
     }

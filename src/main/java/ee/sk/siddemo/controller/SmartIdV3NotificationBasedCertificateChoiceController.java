@@ -10,12 +10,12 @@ package ee.sk.siddemo.controller;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
@@ -63,22 +63,22 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
     @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-person-code")
     public ModelAndView startNotificationCertificateChoiceWithPersonCode(ModelMap model,
                                                                          HttpServletRequest request,
-                                                                         @ModelAttribute("certUserRequest") @Valid UserRequest certUserRequest,
+                                                                         @ModelAttribute("userRequest") @Valid UserRequest userRequest,
                                                                          BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            return new ModelAndView("v3/main", "certUserRequest", certUserRequest);
+            return new ModelAndView("v3/main", "userRequest", userRequest);
         }
         HttpSession session = resetSession(request);
-        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, certUserRequest);
+        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, userRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice", model);
     }
 
     @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-document-number")
     public ModelAndView startNotificationCertificateChoiceWithDocumentNumber(ModelMap model,
-                                                                         HttpServletRequest request,
-                                                                         @ModelAttribute("userDocumentNumberRequest") @Valid UserDocumentNumberRequest userDocumentNumberRequest,
-                                                                         BindingResult bindingResult) {
+                                                                             HttpServletRequest request,
+                                                                             @ModelAttribute("userDocumentNumberRequest") @Valid UserDocumentNumberRequest userDocumentNumberRequest,
+                                                                             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ModelAndView("v3/main", "userDocumentNumberRequest", userDocumentNumberRequest);
         }

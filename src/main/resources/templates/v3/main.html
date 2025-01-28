@@ -75,7 +75,7 @@
                                 <div class="container d-none auth-area" id="dynamic-link-person-code-authentication">
                                     <form method="POST"
                                           th:action="@{/v3/start-authentication-with-person-code}"
-                                          th:object="${authUserRequest}"
+                                          th:object="${userRequest}"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -187,7 +187,7 @@
                                 <div class="container d-none certification-choice-area" id="person-code-certificate-choice">
                                     <form method="POST"
                                           th:action="@{/v3/notification-based/start-certificate-choice-with-person-code}"
-                                          th:object="${certUserRequest}"
+                                          th:object="${userRequest}"
                                           class="form-action">
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
@@ -300,7 +300,6 @@
     });
 
     // handle certificate choice content switching
-    // handle auth content switching
     const certButtons = document.querySelectorAll('.certification-choice-btn');
     const certAreas = document.querySelectorAll('.certification-choice-area');
     certButtons.forEach(button => {
