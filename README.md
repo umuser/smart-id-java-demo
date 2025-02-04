@@ -33,8 +33,12 @@ You also need to create your own Trust Store (or two separate Trust Stores)
 and only import the certificates you trust:
 
   * SSL certificate of SK Smart-ID API endpoint. 
-  * Smart-ID root certificates (to validate that the returned certificate is issued by SK).
-    * For this you need to import TEST_of_EID-SK_2016.pem.crt and TEST_of_NQ-SK_2016.pem.crt into sid.trusted_root_certs.p12
+  * Smart-ID root certificates (to validate that the returned certificate is issued by SK). 
+    * For this you need to import tests certificates into sid.trusted_root_certs.p12
+      * TEST_of_EID-SK_2016.pem.crt 
+      * TEST_of_NQ-SK_2016.pem.crt 
+      * TEST_of_SK_ID_Solutions_EID-Q_2024E.pem.crt
+      * TEST_EID-NQ_2021E.pem.crt
 
 ## Troubleshooting
 
@@ -67,21 +71,29 @@ and only import certificates needed for that specific environment.
 Without following step one would not be able to connect to Demo API server:
  * import demo env API endpoint SSL root certificate. 
  * Note that for demo we have imported ROOT certificate (DigiCert TLS RSA SHA256 2020 CA1) from the chain. Importing root certificate is not recommended for production.
-
-        keytool -importcert -storetype PKCS12 -keystore sid.trusted_server_certs.p12 \
-         -storepass changeit -alias sidDemoServerRootCert -file demo_root_cert.crt -noprompt
+    ```sh
+      keytool -importcert -storetype PKCS12 -keystore sid.trusted_server_certs.p12 \
+             -storepass changeit -alias sidDemoServerRootCert -file demo_root_cert.crt -noprompt
+    ```
 
 ### Trust store for known Smart-ID certificates
 
-
 First we create a trust store and import one of two test root certifices.
-Without following step you couldn't log in with Estonian (+37200000766) testuser.
- * import demo env "TEST of ESTEID-SK 2015" root certificate:
+Without following this step you can't use any of the test users provided here
+https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
 
-        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
-         -storepass changeit -alias "TEST_of_EID-SK_2016" -file TEST_of_EID-SK_2016.pem.crt -noprompt
+Commands to import demo env root certificates:
+```sh
+       keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+        -storepass changeit -alias "TEST_of_EID-SK_2016" -file TEST_of_EID-SK_2016.pem.crt -noprompt
   
-        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
-               -storepass changeit -alias "TEST_of_NQ-SK_2016" -file TEST_of_NQ-SK_2016.pem.crt -noprompt
+       keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+              -storepass changeit -alias "TEST_of_NQ-SK_2016" -file TEST_of_NQ-SK_2016.pem.crt -noprompt
 
+       keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+        -storepass changeit -alias "TEST_of_SK_ID_Solutions_EID-Q_2024E" -file TEST_of_SK_ID_Solutions_EID-Q_2024E.pem.crt -noprompt
+
+       keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+              -storepass changeit -alias "TEST_EID-NQ_2021E" -file TEST_EID-NQ_2021E.pem.crt -noprompt
+```
 
