@@ -115,15 +115,15 @@ public class SmartIdV3DynamicLinkSignatureController {
     }
 
     @GetMapping(value = "/v3/dynamic-link/sign-session-error")
-    public ModelAndView handleCertificateChoiceSessionsError(@RequestParam(value = "errorMessage", required = false) String errorMessage,
-                                                             ModelMap model) {
+    public ModelAndView handleSigningSessionError(@RequestParam(value = "errorMessage", required = false) String errorMessage,
+                                                  ModelMap model) {
         model.addAttribute("errorMessage", errorMessage);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("sidOperationError", model);
     }
 
     @GetMapping(value = "/v3/dynamic-link/signing-result")
-    public ModelAndView getSigningResult(ModelMap model, HttpSession session) {
+    public ModelAndView toSigningResult(ModelMap model, HttpSession session) {
         SigningResult signingResult = smartIdV3DynamicLinkSignatureService.handleSignatureResult(session);
         model.addAttribute("signingResult", signingResult);
         model.addAttribute("activeTab", "rp-api-v3");
