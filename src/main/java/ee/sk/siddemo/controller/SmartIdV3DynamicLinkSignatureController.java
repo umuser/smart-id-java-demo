@@ -22,6 +22,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
+import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdV3DynamicLinkSignatureService;
 import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
@@ -68,6 +69,28 @@ public class SmartIdV3DynamicLinkSignatureController {
         return new ModelAndView("v3/dynamic-link/signing", model);
     }
 
+    @PostMapping(value = "v3/dynamic-link/start-signing-with-person-code")
+    public ModelAndView sendDynamicLinkSigningRequestWithPersonCode(@ModelAttribute("userRequest") UserRequest userRequest,
+                                                                    BindingResult bindingResult,
+                                                                    ModelMap model,
+                                                                    RedirectAttributes redirectAttributes,
+                                                                    HttpServletRequest request) {
+        model.addAttribute("activeTab", "rp-api-v3");
+        if (userRequest.getFile() == null || userRequest.getFile().getOriginalFilename() == null || userRequest.getFile().isEmpty()) {
+            bindingResult.rejectValue("file", "error.file", "Please select a file to upload");
+        }
+
+        if (bindingResult.hasErrors()) {
+            logger.debug("Validation errors: {}", bindingResult.getAllErrors());
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.userRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("userRequest", userRequest);
+            return new ModelAndView("redirect:/rp-api-v3");
+        }
+        HttpSession session = resetSession(request);
+        smartIdV3DynamicLinkSignatureService.startSigningWithPersonCode(session, userRequest);
+        return new ModelAndView("v3/dynamic-link/signing", model);
+    }
+
     @GetMapping(value = "v3/dynamic-link/check-signing-status")
     @ResponseBody
     public ResponseEntity<Map<String, String>> checkSigningStatus(HttpSession session) {
@@ -103,6 +126,7 @@ public class SmartIdV3DynamicLinkSignatureController {
     public ModelAndView getSigningResult(ModelMap model, HttpSession session) {
         SigningResult signingResult = smartIdV3DynamicLinkSignatureService.handleSignatureResult(session);
         model.addAttribute("signingResult", signingResult);
+        model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/dynamic-link/signing-result", model);
     }
 

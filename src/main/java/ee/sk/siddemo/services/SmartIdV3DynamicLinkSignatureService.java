@@ -28,9 +28,11 @@ import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
+import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateParser;
 import ee.sk.smartid.HashType;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.CertificateLevel;
 import ee.sk.smartid.v3.SignableData;
 import ee.sk.smartid.v3.SignatureResponseMapper;
@@ -99,6 +101,47 @@ public class SmartIdV3DynamicLinkSignatureService {
         smartIdV3SessionsStatusService.startPolling(session, sessionResponse.getSessionID());
     }
 
+    public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
+        DataFile uploadedFile = getUploadedDataFile(userRequest.getFile());
+
+        var configuration = new Configuration(Configuration.Mode.TEST);
+        Container container = ContainerBuilder.aContainer()
+                .withConfiguration(configuration)
+                .withDataFile(uploadedFile)
+                .build();
+
+        X509Certificate certificate = getCertificate(session, userRequest);
+
+        DataToSign dataToSign = SignatureBuilder.aSignature(container)
+                .withSigningCertificate(certificate)
+                .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
+                .withSignatureProfile(SignatureProfile.LT)
+                .buildDataToSign();
+
+        var signableData = new SignableData(dataToSign.getDataToSign());
+        signableData.setHashType(HashType.SHA256);
+
+        var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
+
+        DynamicLinkSessionResponse sessionResponse = smartIdClientV3.createDynamicLinkSignature()
+                .withCertificateLevel(CertificateLevel.QUALIFIED)
+                .withSignableData(signableData)
+                .withSemanticsIdentifier(semanticsIdentifier)
+                .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Sign the document!")))
+                .initSignatureSession();
+        Instant responseReceivedTime = Instant.now();
+
+        session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
+        session.setAttribute("sessionToken", sessionResponse.getSessionToken());
+        session.setAttribute("sessionID", sessionResponse.getSessionID());
+        session.setAttribute("responseReceivedTime", responseReceivedTime);
+        session.setAttribute("signableData", signableData);
+        session.setAttribute("dataToSign", dataToSign);
+        session.setAttribute("container", container);
+
+        smartIdV3SessionsStatusService.startPolling(session, sessionResponse.getSessionID());
+    }
+
     public boolean checkSignatureStatus(HttpSession session) {
         Optional<SessionStatus> sessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(session.getId());
         return sessionStatus
@@ -151,6 +194,17 @@ public class SmartIdV3DynamicLinkSignatureService {
 
     private X509Certificate getCertificate(HttpSession httpSession, UserDocumentNumberRequest userDocumentNumberRequest) {
         smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(httpSession, userDocumentNumberRequest);
+        Optional<SessionStatus> certSessionStatus;
+        do {
+            certSessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(httpSession.getId());
+        } while (certSessionStatus.isEmpty());
+
+        SessionCertificate sessionCertificate = certSessionStatus.get().getCert();
+        return CertificateParser.parseX509Certificate(sessionCertificate.getValue());
+    }
+
+    private X509Certificate getCertificate(HttpSession httpSession, UserRequest userRequest) {
+        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(httpSession, userRequest);
         Optional<SessionStatus> certSessionStatus;
         do {
             certSessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(httpSession.getId());

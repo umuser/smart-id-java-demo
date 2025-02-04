@@ -294,8 +294,8 @@
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="document">Document to sign (max 10 MB)</label>
-                                            <input type="file" th:field="*{file}" id="document">
+                                            <label for="dynamic-link-doc-nr-document">Document to sign (max 10 MB)</label>
+                                            <input type="file" th:field="*{file}" id="dynamic-link-doc-nr-document">
 
                                             <div th:if="${#fields.hasErrors('file')}" th:errors="*{file}" style="color:red">
                                                 file Error
@@ -308,7 +308,46 @@
                                     </form>
                                 </div>
                                 <div class="container d-none signing-area" id="dynamic-link-signing-with-person-code">
-                                    Dynamic-link signing with person code
+                                    <form method="POST"
+                                          th:action="@{/v3/dynamic-link/start-signing-with-person-code}"
+                                          th:object="${userRequest}"
+                                          class="form-action"
+                                          enctype="multipart/form-data">
+
+                                        <div class="form-group">
+                                            <label for="dynamic-link-signing-country"> Select country </label>
+                                            <select th:field="*{country}" id="dynamic-link-signing-country" class="form-control" name="country">
+                                                <option th:value="'EE'" value="EE">Estonia</option>
+                                                <option th:value="'LV'" value="LV">Latvia</option>
+                                                <option th:value="'LT'" th:text="Lithuania"></option>
+                                                <option th:value="'BE'" th:text="Belgium"></option>
+                                            </select>
+                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
+                                                country Error
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="dynamic-link-sign-person-code"> Person code</label>
+                                            <input th:field="*{nationalIdentityNumber}"
+                                                   type="text"
+                                                   id="dynamic-link-sign-person-code"
+                                                   class="form-control"
+                                                   placeholder="Enter person code">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="dynamic-link-person-code-document">Document to sign (max 10 MB)</label>
+                                            <input type="file" th:field="*{file}" id="dynamic-link-person-code-document">
+
+                                            <div th:if="${#fields.hasErrors('file')}" th:errors="*{file}" style="color:red">
+                                                file Error
+                                            </div>
+                                        </div>
+
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary">Sign</button>
+                                        </div>
+                                    </form>
                                 </div>
                                 <div class="container d-none signing-area" id="notification-signing-with-person-code">
                                     Notification based signing with person code
