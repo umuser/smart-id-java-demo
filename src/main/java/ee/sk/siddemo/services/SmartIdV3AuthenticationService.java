@@ -80,7 +80,7 @@ public class SmartIdV3AuthenticationService {
 
         updateSession(session, randomChallenge, response, responseReceivedTime);
 
-        smartIdV3SessionsStatusService.startPolling(session, response);
+        smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
@@ -97,7 +97,7 @@ public class SmartIdV3AuthenticationService {
 
         updateSession(session, randomChallenge, response, responseReceivedTime);
 
-        smartIdV3SessionsStatusService.startPolling(session, response);
+        smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
     public void startAuthentication(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
@@ -112,7 +112,7 @@ public class SmartIdV3AuthenticationService {
 
         updateSession(session, randomChallenge, response, responseReceivedTime);
 
-        smartIdV3SessionsStatusService.startPolling(session, response);
+        smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
     public boolean checkAuthenticationStatus(HttpSession session) {

@@ -36,7 +36,6 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.v3.SmartIdClient;
-import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -51,10 +50,6 @@ public class SmartIdV3SessionsStatusService {
 
     public SmartIdV3SessionsStatusService(SmartIdClient smartIdClientV3) {
         this.smartIdClientV3 = smartIdClientV3;
-    }
-
-    public void startPolling(HttpSession httpSession, DynamicLinkSessionResponse response) {
-        startPolling(httpSession, response.getSessionID());
     }
 
     public void startPolling(HttpSession httpSession, String sessionId) {
