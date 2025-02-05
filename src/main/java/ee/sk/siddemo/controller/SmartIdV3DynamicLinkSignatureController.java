@@ -133,7 +133,7 @@ public class SmartIdV3DynamicLinkSignatureController {
     @GetMapping(value = "/v3/dynamic-link/cancel-signing")
     public ModelAndView cancelSigning(ModelMap model, HttpServletRequest request) {
         resetSession(request);
-        return new ModelAndView("redirect:v3/main", model);
+        return new ModelAndView("redirect:/rp-api-v3", model);
     }
 
     private HttpSession resetSession(HttpServletRequest request) {
