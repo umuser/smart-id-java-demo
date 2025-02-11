@@ -30,7 +30,6 @@ import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateParser;
-import ee.sk.smartid.HashType;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.CertificateLevel;
@@ -52,74 +51,38 @@ public class SmartIdV3DynamicLinkSignatureService {
     @Value("${app.signed-files-directory}")
     private String signedFilesDirectory;
 
-    private final SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService;
-    private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
+    private final SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService;
+    private final SmartIdV3SessionsStatusService sessionsStatusService;
     private final SmartIdClient smartIdClientV3;
 
-    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService smartIdV3NotificationBasedCertificateChoiceService, SmartIdV3SessionsStatusService smartIdV3SessionsStatusService, SmartIdClient smartIdClientV3) {
-        this.smartIdV3NotificationBasedCertificateChoiceService = smartIdV3NotificationBasedCertificateChoiceService;
-        this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
+    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService,
+                                                SmartIdV3SessionsStatusService sessionsStatusService,
+                                                SmartIdClient smartIdClientV3) {
+        this.certificateChoiceService = certificateChoiceService;
+        this.sessionsStatusService = sessionsStatusService;
         this.smartIdClientV3 = smartIdClientV3;
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        DataFile uploadedFile = getUploadedDataFile(userDocumentNumberRequest.getFile());
-
-        var configuration = new Configuration(Configuration.Mode.TEST);
-        Container container = ContainerBuilder.aContainer()
-                .withConfiguration(configuration)
-                .withDataFile(uploadedFile)
-                .build();
-
-        X509Certificate certificate = getCertificate(session, userDocumentNumberRequest);
-
-        DataToSign dataToSign = SignatureBuilder.aSignature(container)
-                .withSigningCertificate(certificate)
-                .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
-                .withSignatureProfile(SignatureProfile.LT)
-                .buildDataToSign();
-
-        var signableData = new SignableData(dataToSign.getDataToSign());
-        signableData.setHashType(HashType.SHA256);
+        certificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest);
+        var signableData = toSignableData(userDocumentNumberRequest.getFile(), getX509Certificate(session), session);
 
         DynamicLinkSessionResponse sessionResponse = smartIdClientV3.createDynamicLinkSignature()
                 .withCertificateLevel(CertificateLevel.QUALIFIED)
                 .withSignableData(signableData)
-                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Sign the document!")))
+                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .initSignatureSession();
         Instant responseReceivedTime = Instant.now();
 
-        session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
-        session.setAttribute("sessionToken", sessionResponse.getSessionToken());
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("responseReceivedTime", responseReceivedTime);
-        session.setAttribute("signableData", signableData);
-        session.setAttribute("dataToSign", dataToSign);
-        session.setAttribute("container", container);
+        saveResponseAttributes(session, sessionResponse, responseReceivedTime);
 
-        smartIdV3SessionsStatusService.startPolling(session, sessionResponse.getSessionID());
+        sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
     }
 
     public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
-        DataFile uploadedFile = getUploadedDataFile(userRequest.getFile());
-
-        var configuration = new Configuration(Configuration.Mode.TEST);
-        Container container = ContainerBuilder.aContainer()
-                .withConfiguration(configuration)
-                .withDataFile(uploadedFile)
-                .build();
-
-        X509Certificate certificate = getCertificate(session, userRequest);
-
-        DataToSign dataToSign = SignatureBuilder.aSignature(container)
-                .withSigningCertificate(certificate)
-                .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
-                .withSignatureProfile(SignatureProfile.LT)
-                .buildDataToSign();
-
-        var signableData = new SignableData(dataToSign.getDataToSign());
-        signableData.setHashType(HashType.SHA256);
+        certificateChoiceService.startCertificateChoice(session, userRequest);
+        var signableData = toSignableData(userRequest.getFile(), getX509Certificate(session), session);
 
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
 
@@ -131,19 +94,13 @@ public class SmartIdV3DynamicLinkSignatureService {
                 .initSignatureSession();
         Instant responseReceivedTime = Instant.now();
 
-        session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
-        session.setAttribute("sessionToken", sessionResponse.getSessionToken());
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("responseReceivedTime", responseReceivedTime);
-        session.setAttribute("signableData", signableData);
-        session.setAttribute("dataToSign", dataToSign);
-        session.setAttribute("container", container);
+        saveResponseAttributes(session, sessionResponse, responseReceivedTime);
 
-        smartIdV3SessionsStatusService.startPolling(session, sessionResponse.getSessionID());
+        sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
     }
 
     public boolean checkSignatureStatus(HttpSession session) {
-        Optional<SessionStatus> sessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(session.getId());
+        Optional<SessionStatus> sessionStatus = sessionsStatusService.getSessionsStatus(session.getId());
         return sessionStatus
                 .map(status -> {
                     if (status.getState().equals("COMPLETE")) {
@@ -184,6 +141,24 @@ public class SmartIdV3DynamicLinkSignatureService {
         }
     }
 
+    private SignableData toSignableData(MultipartFile file, X509Certificate signingCertificate, HttpSession session) {
+        Container container = toContainer(file);
+        DataToSign dataToSign = toDataToSign(container, signingCertificate);
+        var signableData = new SignableData(dataToSign.getDataToSign());
+        saveSigningAttributes(session, container, dataToSign, signableData);
+        return signableData;
+    }
+
+    private Container toContainer(MultipartFile userDocumentNumberRequest) {
+        DataFile uploadedFile = getUploadedDataFile(userDocumentNumberRequest);
+
+        var configuration = new Configuration(Configuration.Mode.TEST);
+        return ContainerBuilder.aContainer()
+                .withConfiguration(configuration)
+                .withDataFile(uploadedFile)
+                .build();
+    }
+
     private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
         try {
             return new DataFile(uploadedFile.getInputStream(), uploadedFile.getOriginalFilename(), uploadedFile.getContentType());
@@ -192,22 +167,10 @@ public class SmartIdV3DynamicLinkSignatureService {
         }
     }
 
-    private X509Certificate getCertificate(HttpSession httpSession, UserDocumentNumberRequest userDocumentNumberRequest) {
-        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(httpSession, userDocumentNumberRequest);
+    private X509Certificate getX509Certificate(HttpSession session) {
         Optional<SessionStatus> certSessionStatus;
         do {
-            certSessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(httpSession.getId());
-        } while (certSessionStatus.isEmpty());
-
-        SessionCertificate sessionCertificate = certSessionStatus.get().getCert();
-        return CertificateParser.parseX509Certificate(sessionCertificate.getValue());
-    }
-
-    private X509Certificate getCertificate(HttpSession httpSession, UserRequest userRequest) {
-        smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(httpSession, userRequest);
-        Optional<SessionStatus> certSessionStatus;
-        do {
-            certSessionStatus = smartIdV3SessionsStatusService.getSessionsStatus(httpSession.getId());
+            certSessionStatus = sessionsStatusService.getSessionsStatus(session.getId());
         } while (certSessionStatus.isEmpty());
 
         SessionCertificate sessionCertificate = certSessionStatus.get().getCert();
@@ -221,6 +184,27 @@ public class SmartIdV3DynamicLinkSignatureService {
             directory.mkdirs();
         }
         return targetDir.resolve(containerFile.getName());
+    }
+
+    private static void saveSigningAttributes(HttpSession session, Container container, DataToSign dataToSign, SignableData signableData) {
+        session.setAttribute("container", container);
+        session.setAttribute("dataToSign", dataToSign);
+        session.setAttribute("signableData", signableData);
+    }
+
+    private static void saveResponseAttributes(HttpSession session, DynamicLinkSessionResponse sessionResponse, Instant responseReceivedTime) {
+        session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
+        session.setAttribute("sessionToken", sessionResponse.getSessionToken());
+        session.setAttribute("sessionID", sessionResponse.getSessionID());
+        session.setAttribute("responseReceivedTime", responseReceivedTime);
+    }
+
+    private static DataToSign toDataToSign(Container container, X509Certificate certificate) {
+        return SignatureBuilder.aSignature(container)
+                .withSigningCertificate(certificate)
+                .withSignatureDigestAlgorithm(DigestAlgorithm.SHA512)
+                .withSignatureProfile(SignatureProfile.LT)
+                .buildDataToSign();
     }
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
