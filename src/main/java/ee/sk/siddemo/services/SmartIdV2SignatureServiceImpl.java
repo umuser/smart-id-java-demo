@@ -24,10 +24,7 @@ package ee.sk.siddemo.services;
 
 import static java.util.Arrays.asList;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.digidoc4j.Configuration;
 import org.digidoc4j.Container;
@@ -78,15 +75,16 @@ public class SmartIdV2SignatureServiceImpl implements SmartIdV2SignatureService 
     @Value("${sid.v2.client.relyingPartyName}")
     private String sidRelyingPartyName;
 
-    @Value("${app.signed-files-directory}")
-    private String signedFilesDirectory;
-
     private final SmartIdCertificateService certificateService;
     private final SmartIdClient smartIdClientV2;
+    private final FileService fileService;
 
-    public SmartIdV2SignatureServiceImpl(SmartIdCertificateService certificateService, SmartIdClient smartIdClientV2) {
+    public SmartIdV2SignatureServiceImpl(SmartIdCertificateService certificateService,
+                                         SmartIdClient smartIdClientV2,
+                                         FileService fileService) {
         this.certificateService = certificateService;
         this.smartIdClientV2 = smartIdClientV2;
+        this.fileService = fileService;
     }
 
     @Override
@@ -145,7 +143,7 @@ public class SmartIdV2SignatureServiceImpl implements SmartIdV2SignatureService 
     @Override
     public SigningResult sign(SigningSessionInfo signingSessionInfo) {
         Signature signature;
-        Path targetPath;
+        String targetPath;
 
         try {
 
@@ -166,31 +164,19 @@ public class SmartIdV2SignatureServiceImpl implements SmartIdV2SignatureService 
             signature = signingSessionInfo.getDataToSign().finalize(signatureValue);
             signingSessionInfo.getContainer().addSignature(signature);
 
-            File containerFile = File.createTempFile("sid-demo-container-", ".asice");
-            targetPath = createSavePath(containerFile);
-            signingSessionInfo.getContainer().saveAsFile(targetPath.toString());
+            targetPath = fileService.createPath();
+            signingSessionInfo.getContainer().saveAsFile(targetPath);
         } catch (UserAccountNotFoundException | UserRefusedException | UserSelectedWrongVerificationCodeException | SessionTimeoutException |
                  DocumentUnusableException | ServerMaintenanceException e) {
             logger.warn("Smart-ID service returned internal error that cannot be handled locally.");
             throw new SidOperationException("Smart-ID internal error", e);
-        } catch (IOException e) {
-            throw new SidOperationException("Could not create container file.", e);
         }
 
         return SigningResult.newBuilder()
                 .withResult("Signing successful")
                 .withValid(signature.validateSignature().isValid())
                 .withTimestamp(signature.getTimeStampCreationTime())
-                .withContainerFilePath(targetPath.toString())
+                .withContainerFilePath(targetPath)
                 .build();
-    }
-
-    private Path createSavePath(File containerFile) {
-        Path targetDir = Paths.get(signedFilesDirectory);
-        File directory = targetDir.toFile();
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        return targetDir.resolve(containerFile.getName());
     }
 }

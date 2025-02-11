@@ -1,9 +1,6 @@
 package ee.sk.siddemo.services;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
@@ -20,7 +17,6 @@ import org.digidoc4j.SignatureBuilder;
 import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,19 +44,18 @@ public class SmartIdV3DynamicLinkSignatureService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkSignatureService.class);
 
-    @Value("${app.signed-files-directory}")
-    private String signedFilesDirectory;
-
     private final SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService;
     private final SmartIdV3SessionsStatusService sessionsStatusService;
     private final SmartIdClient smartIdClientV3;
+    private final FileService fileService;
 
     public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService,
                                                 SmartIdV3SessionsStatusService sessionsStatusService,
-                                                SmartIdClient smartIdClientV3) {
+                                                SmartIdClient smartIdClientV3, FileService fileService) {
         this.certificateChoiceService = certificateChoiceService;
         this.sessionsStatusService = sessionsStatusService;
         this.smartIdClientV3 = smartIdClientV3;
+        this.fileService = fileService;
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
@@ -126,19 +121,15 @@ public class SmartIdV3DynamicLinkSignatureService {
 
         Container container = (Container) session.getAttribute("container");
         container.addSignature(signature);
-        try {
-            File containerFile = File.createTempFile("sid-demo-container-", ".asice");
-            Path targetPath = createSavePath(containerFile);
-            container.saveAsFile(targetPath.toString());
-            return SigningResult.newBuilder()
-                    .withResult("Signing successful")
-                    .withValid(signature.validateSignature().isValid())
-                    .withTimestamp(signature.getTimeStampCreationTime())
-                    .withContainerFilePath(targetPath.toString())
-                    .build();
-        } catch (IOException e) {
-            throw new SidOperationException("Could not create container file.", e);
-        }
+
+        String filePath = fileService.createPath();
+        container.saveAsFile(filePath);
+        return SigningResult.newBuilder()
+                .withResult("Signing successful")
+                .withValid(signature.validateSignature().isValid())
+                .withTimestamp(signature.getTimeStampCreationTime())
+                .withContainerFilePath(filePath)
+                .build();
     }
 
     private SignableData toSignableData(MultipartFile file, X509Certificate signingCertificate, HttpSession session) {
@@ -174,15 +165,6 @@ public class SmartIdV3DynamicLinkSignatureService {
 
         SessionCertificate sessionCertificate = certSessionStatus.get().getCert();
         return CertificateParser.parseX509Certificate(sessionCertificate.getValue());
-    }
-
-    private Path createSavePath(File containerFile) {
-        Path targetDir = Paths.get(signedFilesDirectory);
-        File directory = targetDir.toFile();
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        return targetDir.resolve(containerFile.getName());
     }
 
     private static void saveSigningAttributes(HttpSession session, Container container, DataToSign dataToSign) {
