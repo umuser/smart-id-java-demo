@@ -144,9 +144,8 @@ public class SmartIdV3DynamicLinkSignatureService {
     private SignableData toSignableData(MultipartFile file, X509Certificate signingCertificate, HttpSession session) {
         Container container = toContainer(file);
         DataToSign dataToSign = toDataToSign(container, signingCertificate);
-        var signableData = new SignableData(dataToSign.getDataToSign());
-        saveSigningAttributes(session, container, dataToSign, signableData);
-        return signableData;
+        saveSigningAttributes(session, container, dataToSign);
+        return new SignableData(dataToSign.getDataToSign());
     }
 
     private Container toContainer(MultipartFile userDocumentNumberRequest) {
@@ -186,10 +185,9 @@ public class SmartIdV3DynamicLinkSignatureService {
         return targetDir.resolve(containerFile.getName());
     }
 
-    private static void saveSigningAttributes(HttpSession session, Container container, DataToSign dataToSign, SignableData signableData) {
+    private static void saveSigningAttributes(HttpSession session, Container container, DataToSign dataToSign) {
         session.setAttribute("container", container);
         session.setAttribute("dataToSign", dataToSign);
-        session.setAttribute("signableData", signableData);
     }
 
     private static void saveResponseAttributes(HttpSession session, DynamicLinkSessionResponse sessionResponse, Instant responseReceivedTime) {
