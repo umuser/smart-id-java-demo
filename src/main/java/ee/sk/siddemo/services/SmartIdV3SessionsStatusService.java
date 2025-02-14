@@ -30,10 +30,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
@@ -41,8 +40,6 @@ import jakarta.servlet.http.HttpSession;
 
 @Service
 public class SmartIdV3SessionsStatusService {
-
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3SessionsStatusService.class);
 
     private final Map<String, Future<?>> sessions = new ConcurrentHashMap<>();
 
@@ -52,14 +49,14 @@ public class SmartIdV3SessionsStatusService {
         this.smartIdClientV3 = smartIdClientV3;
     }
 
-    public void startPolling(HttpSession httpSession, String sessionId) {
-        Callable<SessionStatus> task = () -> initPolling(sessionId);
+    public void startPolling(HttpSession httpSession, String rpApiSessionId) {
+        Callable<SessionStatus> task = () -> poll(rpApiSessionId);
         Future<?> future = Executors.newSingleThreadExecutor().submit(task);
         sessions.put(httpSession.getId(), future);
     }
 
-    public Optional<SessionStatus> getSessionsStatus(String sessionId) {
-        Future<?> session = sessions.get(sessionId);
+    public Optional<SessionStatus> getSessionsStatus(String userSessionId) {
+        Future<?> session = sessions.get(userSessionId);
         if (session != null && session.isDone()) {
             try {
                 return Optional.of((SessionStatus) session.get());
@@ -70,20 +67,19 @@ public class SmartIdV3SessionsStatusService {
         return Optional.empty();
     }
 
-    public void cancelPolling(String sessionId) {
-        Future<?> future = sessions.get(sessionId);
+    public void cancelPolling(String userSessionId) {
+        Future<?> future = sessions.get(userSessionId);
         if (future != null) {
             future.cancel(true);
-            sessions.remove(sessionId);
+            sessions.remove(userSessionId);
         }
     }
 
-    private SessionStatus initPolling(String sessionId) {
+    public SessionStatus poll(String rpApiSessionId) {
         try {
-            return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(sessionId);
+            return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(rpApiSessionId);
         } catch (SmartIdClientException ex) {
-            logger.error("Error occurred while fetching session status", ex);
-            throw new RuntimeException(ex);
+            throw new SidOperationException("Error occurred while fetching session status", ex);
         }
     }
 }

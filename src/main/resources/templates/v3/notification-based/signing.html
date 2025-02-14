@@ -17,13 +17,11 @@
         <div class="container text-center mt-3">
             Control code is:
             <h1 class="responsive-text" th:text="${verificationCode}"></h1>
-            <p>
-                To sign the uploaded document, enter the Smart-ID PIN2 into your phone after you receive a SMS with the same control code you can see
-                here.
-            </p>
+            <p>To sign the uploaded document, enter the Smart-ID PIN2 into your phone only if Smart-ID app displays same control code you can see
+                here.</p>
             <div class="container w-50 d-flex align-items-center justify-content-center">
                 <span class="spinner-border" role="status" aria-hidden="true"></span>
-                <strong class="m-3">Waiting for PIN ...</strong>
+                <strong class="m-3">Waiting for user confirmation ...</strong>
             </div>
         </div>
         <div class="container text-center">
@@ -32,25 +30,27 @@
     </div>
 </div>
 
-<script th:src="@{/js/bootstrap.js}"></script>
 <script type="text/javascript">
     function loadContent() {
         fetch('/v3/notification-based/check-signing-status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.errorMessage !== undefined) {
-                    window.location.href = '/v3/session-error?errorMessage=' + data.errorMessage;
-                } else if (data.sessionStatus === 'COMPLETED') {
-                    window.location.href = '/v3/signing-result';
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
                 } else {
-                    setTimeout(loadContent, 1000);
+                    window.location.href = '/v3/signing-result';
                 }
             })
-            .catch(error => console.log('Error:', error));
+            .catch(error => {
+                console.log('Error:', error)
+                window.location.href = '/v3/session-error?errorMessage=' + error;
+            });
     }
 
     window.onload = loadContent;
 </script>
+<script th:src="@{/js/bootstrap.js}"></script>
 </body>
 
 </html>

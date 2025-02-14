@@ -41,7 +41,7 @@
     <div class="alert alert-secondary" role="alert">
         Control code is: <h4 class="alert-heading text-center" th:text="${signingSessionInfo.verificationCode}"></h4>
 
-        <p>To sign the uploaded document, enter the Smart-ID PIN2 into your phone after you receive a SMS with the same control code you can see here.</p>
+        <p>To sign the uploaded document, enter the Smart-ID PIN2 into your phone only if Smart-ID app displays same control code you can see here.</p>
 
     </div>
     <form method="POST" th:action="@{/v2/sign}" name="signatureConfirm"></form>

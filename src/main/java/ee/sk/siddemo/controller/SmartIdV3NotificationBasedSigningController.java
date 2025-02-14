@@ -79,18 +79,13 @@ public class SmartIdV3NotificationBasedSigningController {
 
     @GetMapping(value = "v3/notification-based/check-signing-status")
     @ResponseBody
-    public ResponseEntity<Map<String, String>> checkNotificationSigningStatus(HttpSession session) {
-        boolean checkCompleted;
+    public ResponseEntity<?> checkNotificationSigningStatus(HttpSession session) {
         try {
-            checkCompleted = smartIdV3NotificationBasedSigningService.checkSignatureStatus(session);
+            smartIdV3NotificationBasedSigningService.checkSignatureStatus(session);
+            return ResponseEntity.ok().build();
         } catch (SidOperationException ex) {
             logger.error("Error occurred while checking authentication status", ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("errorMessage", ex.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
-        if (checkCompleted) {
-            logger.debug("Session status: COMPLETED");
-            return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
-        }
-        return ResponseEntity.ok(Map.of("sessionStatus", "RUNNING"));
     }
 }

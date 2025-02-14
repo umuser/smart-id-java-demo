@@ -86,7 +86,7 @@
                     document.getElementById("qr-code").src = data.qrCode;
                     document.getElementById("dynamic-link").href = data.dynamicLink;
                     document.getElementById("link-content").innerText = data.dynamicLink;
-                    setTimeout(loadContent, 1000);
+                    setTimeout(loadContent, 1000); // Generate QR-code for every second until session is completed
                 }
             })
             .catch(error => console.log('Error:', error));

@@ -96,8 +96,7 @@ public class SmartIdV3DynamicLinkSignatureController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
-
-        logger.debug("Generate dynamic content for session {}", session.getId());
+        // return new dynamic link and QR-code until sessions is marked as completed
         DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.SIGNATURE);
         Map<String, String> content = new HashMap<>();
         content.put("dynamicLink", dynamicContent.getDynamicLink().toString());

@@ -12,8 +12,6 @@ import org.digidoc4j.DataFile;
 import org.digidoc4j.DataToSign;
 import org.digidoc4j.DigestAlgorithm;
 import org.digidoc4j.SignatureBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,8 +35,6 @@ import jakarta.servlet.http.HttpSession;
 
 @Service
 public class SmartIdV3NotificationBasedSigningService {
-
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdV3NotificationBasedSigningService.class);
 
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService sessionStatusService;
@@ -65,8 +61,6 @@ public class SmartIdV3NotificationBasedSigningService {
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
-        sessionStatusService.startPolling(session, sessionResponse.getSessionID());
-
         return sessionResponse.getVc().getValue();
     }
 
@@ -84,24 +78,16 @@ public class SmartIdV3NotificationBasedSigningService {
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
-        sessionStatusService.startPolling(session, sessionResponse.getSessionID());
-
         return sessionResponse.getVc().getValue();
     }
 
-    public boolean checkSignatureStatus(HttpSession session) {
-        Optional<SessionStatus> sessionStatus = sessionStatusService.getSessionsStatus(session.getId());
-        return sessionStatus
-                .map(status -> {
-                    if (status.getState().equals("COMPLETE")) {
-                        saveValidateResponse(session, status);
-                        session.setAttribute("session_status", "COMPLETED");
-                        logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
-                        return true;
-                    }
-                    return false;
-                })
-                .orElse(false);
+    public void checkSignatureStatus(HttpSession session) {
+        String sessionId = (String) session.getAttribute("sessionID");
+        if (sessionId == null) {
+            throw new SidOperationException("Session ID is missing");
+        }
+        SessionStatus sessionStatus = sessionStatusService.poll(sessionId);
+        saveValidateResponse(session, sessionStatus);
     }
 
     private SignableData toSignableData(MultipartFile uploadedFile, HttpSession session) {
