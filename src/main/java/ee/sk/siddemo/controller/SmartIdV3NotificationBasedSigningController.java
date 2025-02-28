@@ -1,7 +1,5 @@
 package ee.sk.siddemo.controller;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -40,7 +39,7 @@ public class SmartIdV3NotificationBasedSigningController {
                                                                          RedirectAttributes redirectAttributes,
                                                                          HttpSession session) {
         model.addAttribute("activeTab", "rp-api-v3");
-        if (userDocumentNumberRequest.getFile() == null || userDocumentNumberRequest.getFile().getOriginalFilename() == null || userDocumentNumberRequest.getFile().isEmpty()) {
+        if (isFileMissing(userDocumentNumberRequest.getFile())) {
             bindingResult.rejectValue("file", "error.file", "Please select a file to upload");
         }
 
@@ -62,7 +61,7 @@ public class SmartIdV3NotificationBasedSigningController {
                                                                      RedirectAttributes redirectAttributes,
                                                                      HttpSession session) {
         model.addAttribute("activeTab", "rp-api-v3");
-        if (userRequest.getFile() == null || userRequest.getFile().getOriginalFilename() == null || userRequest.getFile().isEmpty()) {
+        if (isFileMissing(userRequest.getFile())) {
             bindingResult.rejectValue("file", "error.file", "Please select a file to upload");
         }
 
@@ -87,5 +86,9 @@ public class SmartIdV3NotificationBasedSigningController {
             logger.error("Error occurred while checking authentication status", ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
+    }
+
+    private static boolean isFileMissing(MultipartFile userRequest) {
+        return userRequest == null || userRequest.getOriginalFilename() == null || userRequest.isEmpty();
     }
 }
