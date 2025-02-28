@@ -88,7 +88,7 @@ public class SmartIdV3NotificationBasedSigningController {
         }
     }
 
-    private static boolean isFileMissing(MultipartFile userRequest) {
-        return userRequest == null || userRequest.getOriginalFilename() == null || userRequest.isEmpty();
+    private static boolean isFileMissing(MultipartFile file) {
+        return file == null || file.getOriginalFilename() == null || file.isEmpty();
     }
 }
