@@ -1,5 +1,27 @@
 package ee.sk.siddemo.services;
 
+/*-
+ * #%L
+ * Smart-ID sample Java client
+ * %%
+ * Copyright (C) 2018 - 2025 SK ID Solutions AS
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-3.0.html>.
+ * #L%
+ */
+
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -12,7 +34,6 @@ import org.digidoc4j.ContainerBuilder;
 import org.digidoc4j.DataFile;
 import org.digidoc4j.DataToSign;
 import org.digidoc4j.DigestAlgorithm;
-import org.digidoc4j.Signature;
 import org.digidoc4j.SignatureBuilder;
 import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
@@ -22,7 +43,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
-import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateParser;
@@ -31,7 +51,6 @@ import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.CertificateLevel;
 import ee.sk.smartid.v3.SignableData;
 import ee.sk.smartid.v3.SignatureResponseMapper;
-import ee.sk.smartid.v3.SingatureResponse;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.DynamicLinkInteraction;
 import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
@@ -44,23 +63,21 @@ public class SmartIdV3DynamicLinkSignatureService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkSignatureService.class);
 
-    private final SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService;
+    private final SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoice;
     private final SmartIdV3SessionsStatusService sessionsStatusService;
     private final SmartIdClient smartIdClientV3;
-    private final FileService fileService;
 
-    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService certificateChoiceService,
+    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoice,
                                                 SmartIdV3SessionsStatusService sessionsStatusService,
-                                                SmartIdClient smartIdClientV3, FileService fileService) {
-        this.certificateChoiceService = certificateChoiceService;
+                                                SmartIdClient smartIdClientV3) {
+        this.notificationCertificateChoice = notificationCertificateChoice;
         this.sessionsStatusService = sessionsStatusService;
         this.smartIdClientV3 = smartIdClientV3;
-        this.fileService = fileService;
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        certificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest);
-        var signableData = toSignableData(userDocumentNumberRequest.getFile(), getX509Certificate(session), session);
+        notificationCertificateChoice.startCertificateChoice(session, userDocumentNumberRequest);
+        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
 
         DynamicLinkSessionResponse sessionResponse = smartIdClientV3.createDynamicLinkSignature()
                 .withCertificateLevel(CertificateLevel.QUALIFIED)
@@ -76,8 +93,8 @@ public class SmartIdV3DynamicLinkSignatureService {
     }
 
     public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
-        certificateChoiceService.startCertificateChoice(session, userRequest);
-        var signableData = toSignableData(userRequest.getFile(), getX509Certificate(session), session);
+        notificationCertificateChoice.startCertificateChoice(session, userRequest);
+        var signableData = toSignableData(userRequest.getFile(), session);
 
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
 
@@ -109,38 +126,17 @@ public class SmartIdV3DynamicLinkSignatureService {
                 .orElse(false);
     }
 
-    public SigningResult handleSignatureResult(HttpSession session) {
-        var dynamicLinkSignatureResponse = (SingatureResponse) session.getAttribute("signing_response");
-        if (dynamicLinkSignatureResponse == null) {
-            throw new SidOperationException("No signature response found in session");
-        }
-
-        byte[] signatureValue = dynamicLinkSignatureResponse.getSignatureValue();
-        DataToSign dataToSign = (DataToSign) session.getAttribute("dataToSign");
-        Signature signature = dataToSign.finalize(signatureValue);
-
-        Container container = (Container) session.getAttribute("container");
-        container.addSignature(signature);
-
-        String filePath = fileService.createPath();
-        container.saveAsFile(filePath);
-        return SigningResult.newBuilder()
-                .withResult("Signing successful")
-                .withValid(signature.validateSignature().isValid())
-                .withTimestamp(signature.getTimeStampCreationTime())
-                .withContainerFilePath(filePath)
-                .build();
-    }
-
-    private SignableData toSignableData(MultipartFile file, X509Certificate signingCertificate, HttpSession session) {
+    private SignableData toSignableData(MultipartFile file,
+                                        HttpSession session) {
         Container container = toContainer(file);
-        DataToSign dataToSign = toDataToSign(container, signingCertificate);
+        X509Certificate certificate = getX509Certificate(session);
+        DataToSign dataToSign = toDataToSign(container, certificate);
         saveSigningAttributes(session, container, dataToSign);
         return new SignableData(dataToSign.getDataToSign());
     }
 
-    private Container toContainer(MultipartFile userDocumentNumberRequest) {
-        DataFile uploadedFile = getUploadedDataFile(userDocumentNumberRequest);
+    private Container toContainer(MultipartFile file) {
+        DataFile uploadedFile = getUploadedDataFile(file);
 
         var configuration = new Configuration(Configuration.Mode.TEST);
         return ContainerBuilder.aContainer()

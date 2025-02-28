@@ -1,5 +1,27 @@
 package ee.sk.siddemo.controller;
 
+/*-
+ * #%L
+ * Smart-ID sample Java client
+ * %%
+ * Copyright (C) 2018 - 2025 SK ID Solutions AS
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-3.0.html>.
+ * #L%
+ */
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,21 +35,18 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
-import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdV3DynamicLinkSignatureService;
-import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.v3.SessionType;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -36,14 +55,11 @@ public class SmartIdV3DynamicLinkSignatureController {
     private final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkSignatureController.class);
 
     private final SmartIdV3DynamicLinkSignatureService smartIdV3DynamicLinkSignatureService;
-    private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
     private final DynamicContentService dynamicContentService;
 
     public SmartIdV3DynamicLinkSignatureController(SmartIdV3DynamicLinkSignatureService smartIdV3DynamicLinkSignatureService,
-                                                   SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
                                                    DynamicContentService dynamicContentService) {
         this.smartIdV3DynamicLinkSignatureService = smartIdV3DynamicLinkSignatureService;
-        this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
         this.dynamicContentService = dynamicContentService;
     }
 
@@ -52,9 +68,9 @@ public class SmartIdV3DynamicLinkSignatureController {
                                                                         BindingResult bindingResult,
                                                                         ModelMap model,
                                                                         RedirectAttributes redirectAttributes,
-                                                                        HttpServletRequest request) {
+                                                                        HttpSession session) {
         model.addAttribute("activeTab", "rp-api-v3");
-        if (userDocumentNumberRequest.getFile() == null || userDocumentNumberRequest.getFile().getOriginalFilename() == null || userDocumentNumberRequest.getFile().isEmpty()) {
+        if (isFileMissing(userDocumentNumberRequest.getFile())) {
             bindingResult.rejectValue("file", "error.file", "Please select a file to upload");
         }
 
@@ -64,7 +80,6 @@ public class SmartIdV3DynamicLinkSignatureController {
             redirectAttributes.addFlashAttribute("userDocumentNumberRequest", userDocumentNumberRequest);
             return new ModelAndView("redirect:/rp-api-v3");
         }
-        HttpSession session = resetSession(request);
         smartIdV3DynamicLinkSignatureService.startSigningWithDocumentNumber(session, userDocumentNumberRequest);
         return new ModelAndView("v3/dynamic-link/signing", model);
     }
@@ -74,9 +89,9 @@ public class SmartIdV3DynamicLinkSignatureController {
                                                                     BindingResult bindingResult,
                                                                     ModelMap model,
                                                                     RedirectAttributes redirectAttributes,
-                                                                    HttpServletRequest request) {
+                                                                    HttpSession session) {
         model.addAttribute("activeTab", "rp-api-v3");
-        if (userRequest.getFile() == null || userRequest.getFile().getOriginalFilename() == null || userRequest.getFile().isEmpty()) {
+        if (isFileMissing(userRequest.getFile())) {
             bindingResult.rejectValue("file", "error.file", "Please select a file to upload");
         }
 
@@ -86,7 +101,6 @@ public class SmartIdV3DynamicLinkSignatureController {
             redirectAttributes.addFlashAttribute("userRequest", userRequest);
             return new ModelAndView("redirect:/rp-api-v3");
         }
-        HttpSession session = resetSession(request);
         smartIdV3DynamicLinkSignatureService.startSigningWithPersonCode(session, userRequest);
         return new ModelAndView("v3/dynamic-link/signing", model);
     }
@@ -105,8 +119,7 @@ public class SmartIdV3DynamicLinkSignatureController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
-
-        logger.debug("Generate dynamic content for session {}", session.getId());
+        // return new dynamic link and QR-code until sessions is marked as completed
         DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.SIGNATURE);
         Map<String, String> content = new HashMap<>();
         content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
@@ -114,36 +127,7 @@ public class SmartIdV3DynamicLinkSignatureController {
         return ResponseEntity.ok(content);
     }
 
-    @GetMapping(value = "/v3/dynamic-link/sign-session-error")
-    public ModelAndView handleSigningSessionError(@RequestParam(value = "errorMessage", required = false) String errorMessage,
-                                                  ModelMap model) {
-        model.addAttribute("errorMessage", errorMessage);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("sidOperationError", model);
-    }
-
-    @GetMapping(value = "/v3/dynamic-link/signing-result")
-    public ModelAndView toSigningResult(ModelMap model, HttpSession session) {
-        SigningResult signingResult = smartIdV3DynamicLinkSignatureService.handleSignatureResult(session);
-        model.addAttribute("signingResult", signingResult);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/dynamic-link/signing-result", model);
-    }
-
-    @GetMapping(value = "/v3/dynamic-link/cancel-signing")
-    public ModelAndView cancelSigning(ModelMap model, HttpServletRequest request) {
-        resetSession(request);
-        return new ModelAndView("redirect:/rp-api-v3", model);
-    }
-
-    private HttpSession resetSession(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        if (session != null) {
-            smartIdV3SessionsStatusService.cancelPolling(session.getId());
-            session.invalidate();
-        }
-        // Create a new session
-        session = request.getSession(true);
-        return session;
+    private static boolean isFileMissing(MultipartFile file) {
+        return file == null || file.getOriginalFilename() == null || file.isEmpty();
     }
 }
