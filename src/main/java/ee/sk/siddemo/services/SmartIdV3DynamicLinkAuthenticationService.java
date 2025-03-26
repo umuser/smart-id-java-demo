@@ -14,7 +14,7 @@ import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.v3.DynamicLinkAuthenticationResponseMapper;
+import ee.sk.smartid.v3.AuthenticationResponseMapper;
 import ee.sk.smartid.v3.RandomChallenge;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.DynamicLinkInteraction;
@@ -111,7 +111,7 @@ public class SmartIdV3DynamicLinkAuthenticationService {
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
             // validate sessions status for dynamic link authentication
-            var dynamicLinkAuthenticationResponse = DynamicLinkAuthenticationResponseMapper.from(status);
+            var dynamicLinkAuthenticationResponse = AuthenticationResponseMapper.from(status);
             session.setAttribute("authentication_response", dynamicLinkAuthenticationResponse);
         } catch (SessionTimeoutException ex) {
             throw new SidOperationException("Session timed out", ex);

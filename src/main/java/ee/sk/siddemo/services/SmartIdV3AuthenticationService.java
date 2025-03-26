@@ -22,15 +22,14 @@ package ee.sk.siddemo.services;
  * #L%
  */
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.smartid.AuthenticationIdentity;
 import ee.sk.smartid.exception.UnprocessableSmartIdResponseException;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
+import ee.sk.smartid.v3.AuthenticationResponse;
 import ee.sk.smartid.v3.AuthenticationResponseValidator;
-import ee.sk.smartid.v3.DynamicLinkAuthenticationResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -44,7 +43,7 @@ public class SmartIdV3AuthenticationService {
 
     public AuthenticationIdentity authenticate(HttpSession session) {
         // validate sessions status for dynamic link authentication
-        DynamicLinkAuthenticationResponse response = (DynamicLinkAuthenticationResponse) session.getAttribute("authentication_response");
+        AuthenticationResponse response = (AuthenticationResponse) session.getAttribute("authentication_response");
         String randomChallenge = (String) session.getAttribute("randomChallenge");
 
         try {

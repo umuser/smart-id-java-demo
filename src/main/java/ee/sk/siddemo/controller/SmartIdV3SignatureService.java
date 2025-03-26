@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.siddemo.services.FileService;
-import ee.sk.smartid.v3.SingatureResponse;
+import ee.sk.smartid.v3.SignatureResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -43,7 +43,7 @@ public class SmartIdV3SignatureService {
     }
 
     public SigningResult handleSignatureResult(HttpSession session) {
-        var signatureResponse = (SingatureResponse) session.getAttribute("signing_response");
+        var signatureResponse = (SignatureResponse) session.getAttribute("signing_response");
         if (signatureResponse == null) {
             throw new SidOperationException("No signature response found in session");
         }

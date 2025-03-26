@@ -134,7 +134,39 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="notification-person-code-authentication">
-                                    Person code authentication
+                                    <form method="POST"
+                                          th:action="@{/v3/notification-based/start-authentication-with-person-code}"
+                                          th:object="${userRequest}"
+                                          class="form-action">
+                                        <div class="text-center">
+                                            <h1>Smart-ID</h1>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="notification-auth-country"> Select country </label>
+                                            <select th:field="*{country}" id="notification-auth-country" class="form-control" name="country">
+                                                <option th:value="'EE'" value="EE">Estonia</option>
+                                                <option th:value="'LV'" value="LV">Latvia</option>
+                                                <option th:value="'LT'" th:text="Lithuania"></option>
+                                                <option th:value="'BE'" th:text="Belgium"></option>
+                                            </select>
+                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
+                                                country Error
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="notification-auth-person-code">Person code</label>
+                                            <input th:field="*{nationalIdentityNumber}" type="text" id="notification-auth-person-code" class="form-control"
+                                                   placeholder="Enter person code" name="personCode">
+                                            <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}"
+                                                 style="color:red">
+                                                nationalIdentityNumber Error
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary">Authenticate</button>
+                                        </div>
+                                    </form>
                                 </div>
 
                                 <div class="container d-none auth-area" id="notification-document-number-authentication">
