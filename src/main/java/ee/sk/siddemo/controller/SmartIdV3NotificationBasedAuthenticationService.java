@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -38,6 +39,19 @@ public class SmartIdV3NotificationBasedAuthenticationService {
         String randomChallenge = RandomChallenge.generate();
         NotificationAuthenticationSessionResponse sessionResponse = smartIdClientV3.createNotificationAuthentication()
                 .withSemanticsIdentifier(semanticsIdentifier)
+                .withRandomChallenge(randomChallenge)
+                .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice(displayText)))
+                .initAuthenticationSession();
+
+        session.setAttribute("sessionID", sessionResponse.getSessionID());
+        session.setAttribute("randomChallenge", randomChallenge);
+        return sessionResponse.getVc().getValue();
+    }
+
+    public String startAuthenticationWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
+        String randomChallenge = RandomChallenge.generate();
+        NotificationAuthenticationSessionResponse sessionResponse = smartIdClientV3.createNotificationAuthentication()
+                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withRandomChallenge(randomChallenge)
                 .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice(displayText)))
                 .initAuthenticationSession();

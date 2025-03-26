@@ -15,6 +15,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import jakarta.servlet.http.HttpSession;
 
@@ -44,6 +45,25 @@ public class SmartIdV3NotificationBasedAuthenticationController {
         }
 
         String verificationCode = smartIdV3NotificationBasedAuthenticationService.startAuthenticationWithPersonCode(session, userRequest);
+        model.addAttribute("verificationCode", verificationCode);
+        return new ModelAndView("v3/notification-based/authentication", model);
+    }
+
+    @PostMapping("v3/notification-based/start-authentication-with-document-number")
+    public ModelAndView startAuthenticationWithDocumentNumber(@ModelAttribute("userDocumentNumberRequest") UserDocumentNumberRequest userDocumentNumberRequest,
+                                                              BindingResult bindingResult,
+                                                              ModelMap model,
+                                                              RedirectAttributes redirectAttributes,
+                                                              HttpSession session) {
+        model.addAttribute("activeTab", "rp-api-v3");
+        if (bindingResult.hasErrors()) {
+            logger.debug("Validation errors: {}", bindingResult.getAllErrors());
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.userDocumentNumberRequest", bindingResult);
+            redirectAttributes.addFlashAttribute("userDocumentNumberRequest", userDocumentNumberRequest);
+            return new ModelAndView("redirect:/rp-api-v3");
+        }
+
+        String verificationCode = smartIdV3NotificationBasedAuthenticationService.startAuthenticationWithDocumentNumber(session, userDocumentNumberRequest);
         model.addAttribute("verificationCode", verificationCode);
         return new ModelAndView("v3/notification-based/authentication", model);
     }
