@@ -69,13 +69,13 @@
                                 <div class="container auth-area" id="anonymous-authentication">
                                     <div class="text-center">
                                         <h1>Smart-ID</h1>
-                                        <a th:href="@{/v3/start-authentication}" class="btn btn-primary">Authenticate</a>
+                                        <a th:href="@{/v3/dynamic-link/start-authentication}" class="btn btn-primary">Authenticate</a>
                                     </div>
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-person-code-authentication">
                                     <form method="POST"
-                                          th:action="@{/v3/start-authentication-with-person-code}"
+                                          th:action="@{/v3/dynamic-link/start-authentication-with-person-code}"
                                           th:object="${userRequest}"
                                           class="form-action">
                                         <div class="text-center">
@@ -111,7 +111,7 @@
 
                                 <div class="container d-none auth-area" id="dynamic-link-document-number-authentication">
                                     <form method="POST"
-                                          th:action="@{/v3/start-authentication-with-document-number}"
+                                          th:action="@{/v3/dynamic-link/start-authentication-with-document-number}"
                                           th:object="${userDocumentNumberRequest}"
                                           class="form-action">
                                         <div class="text-center">
