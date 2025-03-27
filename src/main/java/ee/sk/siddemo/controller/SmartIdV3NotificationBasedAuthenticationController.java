@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.siddemo.services.SmartIdV3NotificationBasedAuthenticationService;
 import jakarta.servlet.http.HttpSession;
 
 @Controller

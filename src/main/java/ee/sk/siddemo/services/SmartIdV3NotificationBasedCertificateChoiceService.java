@@ -22,7 +22,6 @@ package ee.sk.siddemo.services;
  * #L%
  */
 
-import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,11 +32,14 @@ import org.springframework.stereotype.Service;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.smartid.CertificateParser;
+import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.exception.useraction.UserRefusedException;
+import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+import ee.sk.smartid.v3.CertificateChoiceResponse;
+import ee.sk.smartid.v3.CertificateChoiceResponseMapper;
 import ee.sk.smartid.v3.CertificateLevel;
-import ee.sk.smartid.v3.ErrorResultHandler;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.NotificationCertificateChoiceSessionResponse;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
@@ -49,7 +51,7 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3NotificationBasedCertificateChoiceService.class);
 
-    private static final Map<String, String> oidMap = Map.of("2.5.4.5", "serialNumber", "2.5.4.42", "givenName", "2.5.4.4", "surname");
+    private static final Map<String, String> OID_MAP = Map.of("2.5.4.5", "serialNumber", "2.5.4.42", "givenName", "2.5.4.4", "surname");
 
     private final SmartIdClient smartIdClientV3;
     private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
@@ -96,14 +98,13 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
-            if (!"OK".equals(status.getResult().getEndResult())) {
-                ErrorResultHandler.handle(status.getResult().getEndResult());
-            }
-            X509Certificate certificate = CertificateParser.parseX509Certificate(status.getCert().getValue());
-            String distinguishedName = certificate.getSubjectX500Principal().getName("RFC1779", oidMap);
+            CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(status);
+            String distinguishedName = certificateChoiceResponse.getCertificate().getSubjectX500Principal().getName("RFC1779", OID_MAP);
             session.setAttribute("distinguishedName", distinguishedName);
-        } catch (SessionTimeoutException ex) {
-            throw new SidOperationException("Session timed out", ex);
+        } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException ex) {
+            throw new SidOperationException(ex.getMessage());
+        } catch (SmartIdClientException ex) {
+            throw new SidOperationException("Error occurred while parsing certificate", ex);
         }
     }
 }

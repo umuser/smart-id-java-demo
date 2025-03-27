@@ -1,4 +1,4 @@
-package ee.sk.siddemo.controller;
+package ee.sk.siddemo.services;
 
 import java.util.List;
 
@@ -8,8 +8,9 @@ import org.springframework.stereotype.Service;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.exception.useraction.UserRefusedException;
+import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.AuthenticationResponseMapper;
 import ee.sk.smartid.v3.RandomChallenge;
@@ -74,7 +75,7 @@ public class SmartIdV3NotificationBasedAuthenticationService {
         try {
             var signatureResponse = AuthenticationResponseMapper.from(status);
             session.setAttribute("authentication_response", signatureResponse);
-        } catch (SessionTimeoutException ex) {
+        } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException ex) {
             throw new SidOperationException(ex.getMessage());
         }
     }

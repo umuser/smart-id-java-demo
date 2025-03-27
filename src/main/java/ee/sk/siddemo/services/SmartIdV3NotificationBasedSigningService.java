@@ -10,12 +10,12 @@ package ee.sk.siddemo.services;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
@@ -41,17 +41,20 @@ import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.smartid.CertificateParser;
 import ee.sk.smartid.HashType;
+import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.exception.useraction.UserRefusedException;
+import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
+import ee.sk.smartid.v3.CertificateChoiceResponse;
+import ee.sk.smartid.v3.CertificateChoiceResponseMapper;
 import ee.sk.smartid.v3.CertificateLevel;
 import ee.sk.smartid.v3.SignableData;
 import ee.sk.smartid.v3.SignatureResponseMapper;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.NotificationInteraction;
 import ee.sk.smartid.v3.rest.dao.NotificationSignatureSessionResponse;
-import ee.sk.smartid.v3.rest.dao.SessionCertificate;
 import ee.sk.smartid.v3.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -136,11 +139,21 @@ public class SmartIdV3NotificationBasedSigningService {
     private X509Certificate getCertificate(HttpSession httpSession) {
         Optional<SessionStatus> certSessionStatus;
         do {
-            certSessionStatus = sessionStatusService.getSessionsStatus(httpSession.getId());
+            certSessionStatus = getCertificateChoiceSessionStatus(httpSession);
         } while (certSessionStatus.isEmpty());
 
-        SessionCertificate sessionCertificate = certSessionStatus.get().getCert();
-        return CertificateParser.parseX509Certificate(sessionCertificate.getValue());
+        CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(certSessionStatus.get());
+        return certificateChoiceResponse.getCertificate();
+    }
+
+    private Optional<SessionStatus> getCertificateChoiceSessionStatus(HttpSession session) {
+        Optional<SessionStatus> certSessionStatus;
+        try {
+            certSessionStatus = sessionStatusService.getSessionsStatus(session.getId());
+        } catch (SessionTimeoutException | UserRefusedException ex) {
+            throw new SidOperationException(ex.getMessage());
+        }
+        return certSessionStatus;
     }
 
     private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
@@ -169,7 +182,7 @@ public class SmartIdV3NotificationBasedSigningService {
         try {
             var signatureResponse = SignatureResponseMapper.from(status, CertificateLevel.QUALIFIED.name());
             session.setAttribute("signing_response", signatureResponse);
-        } catch (SessionTimeoutException ex) {
+        } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException | UserSelectedWrongVerificationCodeException ex) {
             throw new SidOperationException(ex.getMessage());
         }
     }
