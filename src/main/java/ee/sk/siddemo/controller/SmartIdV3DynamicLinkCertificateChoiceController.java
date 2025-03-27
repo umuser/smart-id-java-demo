@@ -32,7 +32,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -40,9 +39,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdV3DynamicLinkCertificateChoiceService;
-import ee.sk.siddemo.services.SmartIdV3SessionsStatusService;
 import ee.sk.smartid.v3.SessionType;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -51,20 +48,16 @@ public class SmartIdV3DynamicLinkCertificateChoiceController {
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkCertificateChoiceController.class);
 
     private final SmartIdV3DynamicLinkCertificateChoiceService smartIdV3DynamicLinkCertificateChoiceService;
-    private final SmartIdV3SessionsStatusService smartIdV3SessionsStatusService;
     private final DynamicContentService dynamicContentService;
 
     public SmartIdV3DynamicLinkCertificateChoiceController(SmartIdV3DynamicLinkCertificateChoiceService smartIdV3DynamicLinkCertificateChoiceService,
-                                                           SmartIdV3SessionsStatusService smartIdV3SessionsStatusService,
                                                            DynamicContentService dynamicContentService) {
         this.smartIdV3DynamicLinkCertificateChoiceService = smartIdV3DynamicLinkCertificateChoiceService;
-        this.smartIdV3SessionsStatusService = smartIdV3SessionsStatusService;
         this.dynamicContentService = dynamicContentService;
     }
 
     @GetMapping(value = "/v3/dynamic-link/start-certificate-choice")
-    public ModelAndView startDynamicCertificateChoice(ModelMap model, HttpServletRequest request) {
-        HttpSession session = resetSession(request);
+    public ModelAndView startDynamicCertificateChoice(ModelMap model, HttpSession session) {
         smartIdV3DynamicLinkCertificateChoiceService.startCertificateChoice(session);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/dynamic-link/certificate-choice", model);
@@ -94,14 +87,6 @@ public class SmartIdV3DynamicLinkCertificateChoiceController {
         return ResponseEntity.ok(content);
     }
 
-    @GetMapping(value = "/v3/dynamic-link/certificate-choice-session-error")
-    public ModelAndView handleCertificateChoiceSessionsError(@RequestParam(value = "errorMessage", required = false) String errorMessage,
-                                                             ModelMap model) {
-        model.addAttribute("errorMessage", errorMessage);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("sidOperationError", model);
-    }
-
     @GetMapping(value = "/v3/dynamic-link/certificate-choice-result")
     public ModelAndView toCertificateChoiceResult(ModelMap model, HttpSession session) {
         String documentNumber = (String) session.getAttribute("documentNumber");
@@ -110,23 +95,5 @@ public class SmartIdV3DynamicLinkCertificateChoiceController {
         model.addAttribute("distinguishedName", distinguishedName);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/dynamic-link/certificate-choice-result", model);
-    }
-
-    @GetMapping(value = "/v3/dynamic-link/cancel-certificate-choice")
-    public ModelAndView cancelCertificateChoice(ModelMap model, HttpServletRequest request) {
-        resetSession(request);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/main", model);
-    }
-
-    private HttpSession resetSession(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        if (session != null) {
-            smartIdV3SessionsStatusService.cancelPolling(session.getId());
-            session.invalidate();
-        }
-        // Create a new session
-        session = request.getSession(true);
-        return session;
     }
 }
