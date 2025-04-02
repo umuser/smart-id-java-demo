@@ -17,11 +17,10 @@
         <div class="container text-center mt-3">
             Control code is:
             <h1 class="responsive-text" th:text="${verificationCode}"></h1>
-            <p>To sign the uploaded document, enter the Smart-ID PIN2 into your phone only if Smart-ID app displays same control code you can see
-                here.</p>
+            <p>Enter the Smart-ID PIN1 into your phone only if Smart-ID app displays same control code you can see here.</p>
             <div class="container w-50 d-flex align-items-center justify-content-center">
                 <span class="spinner-border" role="status" aria-hidden="true"></span>
-                <strong class="m-3">Waiting for user confirmation ...</strong>
+                <strong class="m-3">Waiting for user input ...</strong>
             </div>
         </div>
         <div class="container text-center">
@@ -32,14 +31,14 @@
 
 <script type="text/javascript">
     function loadContent() {
-        fetch('/v3/notification-based/check-signing-status')
+        fetch('/v3/notification-based/check-authentication-status')
             .then(response => {
                 if (!response.ok) {
                     return response.text().then(text => {
                         throw new Error(text);
                     });
                 } else {
-                    window.location.href = '/v3/signing-result';
+                    window.location.href = '/v3/authentication-result';
                 }
             })
             .catch(error => {

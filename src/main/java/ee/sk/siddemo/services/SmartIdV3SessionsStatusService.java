@@ -77,7 +77,7 @@ public class SmartIdV3SessionsStatusService {
 
     public SessionStatus poll(String rpApiSessionId) {
         try {
-            return smartIdClientV3.getSessionsStatusPoller().fetchFinalSessionStatus(rpApiSessionId);
+            return smartIdClientV3.getSessionStatusPoller().fetchFinalSessionStatus(rpApiSessionId);
         } catch (SmartIdClientException ex) {
             throw new SidOperationException("Error occurred while fetching session status", ex);
         }

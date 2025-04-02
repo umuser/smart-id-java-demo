@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
+import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.v3.ErrorResultHandler;
 import ee.sk.smartid.v3.SmartIdClient;
 import ee.sk.smartid.v3.rest.dao.DynamicLinkSessionResponse;
@@ -131,8 +132,8 @@ public class SmartIdV3DynamicLinkCertificateChoiceService {
             String distinguishedName = "CN=John Doe, OU=IT, O=Company, C=EE";
             session.setAttribute("distinguishedName", distinguishedName);
             session.setAttribute("documentNumber", status.getResult().getDocumentNumber());
-        } catch (SessionTimeoutException ex) {
-            throw new SidOperationException("Session timed out", ex);
+        } catch (SessionTimeoutException | UserRefusedException ex) {
+            throw new SidOperationException(ex.getMessage());
         }
     }
 }

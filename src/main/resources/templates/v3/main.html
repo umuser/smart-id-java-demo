@@ -42,13 +42,16 @@
                             <h5 class="text-uppercase fw-bold mb-2">Dynamic link</h5>
                             <div class="ms-3">
                                 <a href="#"
-                                   class="btn btn-outline-dark w-100 mb-1 auth-btn"
+                                   class="btn btn-outline-dark w-100 mb-1 auth-btn active"
+                                   id="anonymous-authentication-btn"
                                    aria-controls="anonymous-authentication">Anonymous authentication</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 auth-btn"
+                                   id="dynamic-link-person-code-authentication-btn"
                                    aria-controls="dynamic-link-person-code-authentication">Authentication with person code</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 auth-btn"
+                                   id="dynamic-link-document-number-authentication-btn"
                                    aria-controls="dynamic-link-document-number-authentication">Authentication with document number</a>
                             </div>
 
@@ -56,9 +59,11 @@
                             <div class="ms-3">
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 auth-btn"
+                                   id="notification-person-code-authentication-btn"
                                    aria-controls="notification-person-code-authentication">Authentication with person code</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 auth-btn"
+                                   id="notification-document-number-authentication-btn"
                                    aria-controls="notification-document-number-authentication">Authentication with document number</a>
                             </div>
                         </div>
@@ -69,13 +74,13 @@
                                 <div class="container auth-area" id="anonymous-authentication">
                                     <div class="text-center">
                                         <h1>Smart-ID</h1>
-                                        <a th:href="@{/v3/start-authentication}" class="btn btn-primary">Authenticate</a>
+                                        <a th:href="@{/v3/dynamic-link/start-authentication}" class="btn btn-primary">Authenticate</a>
                                     </div>
                                 </div>
 
                                 <div class="container d-none auth-area" id="dynamic-link-person-code-authentication">
                                     <form method="POST"
-                                          th:action="@{/v3/start-authentication-with-person-code}"
+                                          th:action="@{/v3/dynamic-link/start-authentication-with-person-code}"
                                           th:object="${userRequest}"
                                           class="form-action">
                                         <div class="text-center">
@@ -111,7 +116,7 @@
 
                                 <div class="container d-none auth-area" id="dynamic-link-document-number-authentication">
                                     <form method="POST"
-                                          th:action="@{/v3/start-authentication-with-document-number}"
+                                          th:action="@{/v3/dynamic-link/start-authentication-with-document-number}"
                                           th:object="${userDocumentNumberRequest}"
                                           class="form-action">
                                         <div class="text-center">
@@ -134,11 +139,64 @@
                                 </div>
 
                                 <div class="container d-none auth-area" id="notification-person-code-authentication">
-                                    Person code authentication
+                                    <form method="POST"
+                                          th:action="@{/v3/notification-based/start-authentication-with-person-code}"
+                                          th:object="${userRequest}"
+                                          class="form-action">
+                                        <div class="text-center">
+                                            <h1>Smart-ID</h1>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="notification-auth-country"> Select country </label>
+                                            <select th:field="*{country}" id="notification-auth-country" class="form-control" name="country">
+                                                <option th:value="'EE'" value="EE">Estonia</option>
+                                                <option th:value="'LV'" value="LV">Latvia</option>
+                                                <option th:value="'LT'" th:text="Lithuania"></option>
+                                                <option th:value="'BE'" th:text="Belgium"></option>
+                                            </select>
+                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
+                                                country Error
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="notification-auth-person-code">Person code</label>
+                                            <input th:field="*{nationalIdentityNumber}" type="text" id="notification-auth-person-code"
+                                                   class="form-control"
+                                                   placeholder="Enter person code" name="personCode">
+                                            <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}"
+                                                 style="color:red">
+                                                nationalIdentityNumber Error
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary">Authenticate</button>
+                                        </div>
+                                    </form>
                                 </div>
 
                                 <div class="container d-none auth-area" id="notification-document-number-authentication">
-                                    Document number authentication
+                                    <form method="POST"
+                                          th:action="@{/v3/notification-based/start-authentication-with-document-number}"
+                                          th:object="${userDocumentNumberRequest}"
+                                          class="form-action">
+                                        <div class="text-center">
+                                            <h1>Smart-ID</h1>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="notification-auth-document-number"> Document number</label>
+                                            <input th:field="*{documentNumber}"
+                                                   type="text"
+                                                   id="notification-auth-document-number"
+                                                   class="form-control"
+                                                   placeholder="Enter document number">
+                                        </div>
+
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary">Authenticate</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -154,7 +212,8 @@
                             <h5 class="text-uppercase fw-bold mb-2">Dynamic link</h5>
                             <div class="ms-3">
                                 <a href="#"
-                                   class="btn btn-outline-dark w-100 mb-1 certification-choice-btn"
+                                   class="btn btn-outline-dark w-100 mb-1 certification-choice-btn active"
+                                   id="anonymous-certificate-choice-btn"
                                    aria-controls="anonymous-certificate-choice">Anonymous certificate choice</a>
                             </div>
 
@@ -162,9 +221,11 @@
                             <div class="ms-3">
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 certification-choice-btn"
+                                   id="person-code-certificate-choice-btn"
                                    aria-controls="person-code-certificate-choice">Certificate choice with person code</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 certification-choice-btn"
+                                   id="document-number-certificate-choice-btn"
                                    aria-controls="document-number-certificate-choice">Certificate choice with document number</a>
                             </div>
                         </div>
@@ -258,10 +319,12 @@
                             <h5 class="text-uppercase fw-bold mb-2">Dynamic link</h5>
                             <div class="ms-3">
                                 <a href="#"
-                                   class="btn btn-outline-dark w-100 mb-1 signing-btn"
+                                   class="btn btn-outline-dark w-100 mb-1 signing-btn active"
+                                   id="dynamic-link-signing-with-document-number-btn"
                                    aria-controls="dynamic-link-signing-with-document-number">Sign with document number</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 signing-btn"
+                                   id="dynamic-link-signing-with-person-code-btn"
                                    aria-controls="dynamic-link-signing-with-person-code">Sign with person code</a>
                             </div>
 
@@ -269,9 +332,11 @@
                             <div class="ms-3">
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 signing-btn"
+                                   id="notification-signing-with-document-number-btn"
                                    aria-controls="notification-signing-with-document-number">Signing with document number</a>
                                 <a href="#"
                                    class="btn btn-outline-dark w-100 mb-1 signing-btn"
+                                   id="notification-signing-with-person-code-btn"
                                    aria-controls="notification-signing-with-person-code">Signing with person code</a>
                             </div>
                         </div>
@@ -446,10 +511,13 @@
                 tab.classList.remove('active');
             });
 
-            const tabId = tab.getAttribute('aria-controls');
-            let tabPane = document.getElementById(tabId);
+            const tabPaneId = tab.getAttribute('aria-controls');
+            let tabPane = document.getElementById(tabPaneId);
             tabPane.classList.add('active');
             tab.classList.add('active');
+
+            sessionStorage.setItem('activeTab', tab.getAttribute('id'));
+            sessionStorage.removeItem('activeButton');
         }
     });
 
@@ -475,6 +543,8 @@
                 let area = document.getElementById(areaId);
                 area.classList.add('active');
                 area.classList.remove('d-none');
+
+                sessionStorage.setItem('activeButton', button.getAttribute('id'))
             }
         });
     }
@@ -482,6 +552,23 @@
     connectButtonClickToArea('.auth-btn', '.auth-area');
     connectButtonClickToArea('.certification-choice-btn', '.certification-choice-area');
     connectButtonClickToArea('.signing-btn', '.signing-area');
+
+    // open last active tab
+    document.addEventListener('DOMContentLoaded', function () {
+        const lastActiveButtonId = sessionStorage.getItem('activeButton');
+
+        let lastActiveTabId = sessionStorage.getItem('activeTab');
+        if (!lastActiveTabId) {
+            lastActiveTabId = 'auth-tab';
+        }
+        const tab = document.getElementById(lastActiveTabId);
+        tab.click();
+
+        if (lastActiveButtonId) {
+            const button = document.getElementById(lastActiveButtonId);
+            button.click();
+        }
+    });
 </script>
 </body>
 </html>

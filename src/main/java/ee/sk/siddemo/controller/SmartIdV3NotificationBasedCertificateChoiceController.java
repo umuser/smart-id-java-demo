@@ -62,13 +62,12 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
 
     @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-person-code")
     public ModelAndView startNotificationCertificateChoiceWithPersonCode(ModelMap model,
-                                                                         HttpServletRequest request,
+                                                                         HttpSession session,
                                                                          @ModelAttribute("userRequest") @Valid UserRequest userRequest,
                                                                          BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ModelAndView("v3/main", "userRequest", userRequest);
         }
-        HttpSession session = resetSession(request);
         smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, userRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice", model);
@@ -76,13 +75,12 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
 
     @PostMapping(value = "/v3/notification-based/start-certificate-choice-with-document-number")
     public ModelAndView startNotificationCertificateChoiceWithDocumentNumber(ModelMap model,
-                                                                             HttpServletRequest request,
+                                                                             HttpSession session,
                                                                              @ModelAttribute("userDocumentNumberRequest") @Valid UserDocumentNumberRequest userDocumentNumberRequest,
                                                                              BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return new ModelAndView("v3/main", "userDocumentNumberRequest", userDocumentNumberRequest);
         }
-        HttpSession session = resetSession(request);
         smartIdV3NotificationBasedCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice", model);
@@ -114,23 +112,5 @@ public class SmartIdV3NotificationBasedCertificateChoiceController {
         model.addAttribute("distinguishedName", distinguishedName);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("v3/notification-based/certificate-choice-result", model);
-    }
-
-    @GetMapping(value = "/v3/notification-based/cancel-certificate-choice")
-    public ModelAndView cancelCertificateChoice(ModelMap model, HttpServletRequest request) {
-        resetSession(request);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/main", model);
-    }
-
-    private HttpSession resetSession(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        if (session != null) {
-            smartIdV3SessionsStatusService.cancelPolling(session.getId());
-            session.invalidate();
-        }
-        // Create a new session
-        session = request.getSession(true);
-        return session;
     }
 }

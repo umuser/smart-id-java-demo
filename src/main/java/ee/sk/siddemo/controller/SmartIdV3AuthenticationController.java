@@ -22,29 +22,28 @@ package ee.sk.siddemo.controller;
  * #L%
  */
 
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
-import ee.sk.siddemo.model.SigningResult;
-import ee.sk.siddemo.services.SmartIdV3SignatureService;
+import ee.sk.siddemo.services.SmartIdV3AuthenticationService;
+import ee.sk.smartid.AuthenticationIdentity;
 import jakarta.servlet.http.HttpSession;
 
-@Controller
-public class SmartIdV3SignatureController {
+@RestController
+public class SmartIdV3AuthenticationController {
 
-    private final SmartIdV3SignatureService signatureService;
+    private final SmartIdV3AuthenticationService smartIdV3AuthenticationService;
 
-    public SmartIdV3SignatureController(SmartIdV3SignatureService signatureService) {
-        this.signatureService = signatureService;
+    public SmartIdV3AuthenticationController(SmartIdV3AuthenticationService smartIdV3AuthenticationService) {
+        this.smartIdV3AuthenticationService = smartIdV3AuthenticationService;
     }
 
-    @GetMapping(value = "/v3/signing-result")
-    public ModelAndView toSigningResult(ModelMap model, HttpSession session) {
-        SigningResult signingResult = signatureService.handleSignatureResult(session);
-        model.addAttribute("signingResult", signingResult);
-        model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("v3/signing-result", model);
+    @GetMapping(value = "/v3/authentication-result")
+    public ModelAndView getAuthenticationResult(ModelMap model, HttpSession session) {
+        AuthenticationIdentity authenticationIdentity = smartIdV3AuthenticationService.authenticate(session);
+        model.addAttribute("person", authenticationIdentity);
+        return new ModelAndView("v3/authentication-result", model);
     }
 }

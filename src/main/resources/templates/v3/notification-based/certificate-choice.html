@@ -24,7 +24,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.errorMessage !== undefined) {
-                    window.location.href = '/v3/notification-based/certificate-choice-session-error?errorMessage=' + data.errorMessage;
+                    window.location.href = '/v3/session-error?errorMessage=' + data.errorMessage;
                 } else if (data.sessionStatus === 'COMPLETED') {
                     window.location.href = '/v3/notification-based/certificate-choice-result';
                 } else {
