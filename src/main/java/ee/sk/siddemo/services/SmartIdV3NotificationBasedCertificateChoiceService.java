@@ -33,6 +33,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
+import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
@@ -64,20 +65,24 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     public void startCertificateChoice(HttpSession session, @Valid UserRequest userRequest) {
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
+        var certificateChoiceCertificateLevel = CertificateLevel.QSCD;
         NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
-                .withCertificateLevel(CertificateLevel.QSCD)
+                .withCertificateLevel(certificateChoiceCertificateLevel)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .initCertificateChoice();
 
+        session.setAttribute("requestedCertificateLevel", certificateChoiceCertificateLevel);
         smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
     public void startCertificateChoice(HttpSession session, @Valid UserDocumentNumberRequest userDocumentNumberRequest) {
+        var requestedCertificateLevel = CertificateLevel.QSCD;
         NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
-                .withCertificateLevel(CertificateLevel.QUALIFIED)
+                .withCertificateLevel(requestedCertificateLevel)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .initCertificateChoice();
 
+        session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
         smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
@@ -98,10 +103,11 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
-            CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(status);
+            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("requestedCertificateLevel");
+            CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(status, requestedCertificateLevel);
             String distinguishedName = certificateChoiceResponse.getCertificate().getSubjectX500Principal().getName("RFC1779", OID_MAP);
             session.setAttribute("distinguishedName", distinguishedName);
-        } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException ex) {
+        } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         } catch (SmartIdClientException ex) {
             throw new SidOperationException("Error occurred while parsing certificate", ex);
