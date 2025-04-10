@@ -48,7 +48,6 @@ import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.CertificateChoiceResponse;
-import ee.sk.smartid.v3.CertificateChoiceResponseMapper;
 import ee.sk.smartid.v3.CertificateLevel;
 import ee.sk.smartid.v3.SignableData;
 import ee.sk.smartid.v3.SignatureResponseMapper;
@@ -75,9 +74,9 @@ public class SmartIdV3NotificationBasedSigningService {
     }
 
     public String startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        notificationCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest);
-        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
         var signatureCertificateLevel = CertificateLevel.QUALIFIED;
+        notificationCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest, signatureCertificateLevel);
+        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
         NotificationSignatureSessionResponse sessionResponse = smartIdClientV3.createNotificationSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
@@ -86,15 +85,15 @@ public class SmartIdV3NotificationBasedSigningService {
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("requestedCertificateLevel", signatureCertificateLevel);
+        session.setAttribute("signatureCertificateLevel", signatureCertificateLevel);
         return sessionResponse.getVc().getValue();
     }
 
     public String startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
-        notificationCertificateChoiceService.startCertificateChoice(session, userRequest);
+        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
+        notificationCertificateChoiceService.startCertificateChoice(session, userRequest, signatureCertificateLevel);
         var signableData = toSignableData(userRequest.getFile(), session);
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
         NotificationSignatureSessionResponse sessionResponse = smartIdClientV3.createNotificationSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
@@ -103,7 +102,7 @@ public class SmartIdV3NotificationBasedSigningService {
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("requestedCertificateLevel", signatureCertificateLevel);
+        session.setAttribute("signatureCertificateLevel", signatureCertificateLevel);
         return sessionResponse.getVc().getValue();
     }
 
@@ -143,7 +142,7 @@ public class SmartIdV3NotificationBasedSigningService {
             certSessionStatus = getCertificateChoiceSessionStatus(httpSession);
         } while (certSessionStatus.isEmpty());
 
-        CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(certSessionStatus.get());
+        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(httpSession, certSessionStatus.get());
         return certificateChoiceResponse.getCertificate();
     }
 
@@ -181,9 +180,9 @@ public class SmartIdV3NotificationBasedSigningService {
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
-            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("requestedCertificateLevel");
+            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("signatureCertificateLevel");
             var signatureResponse = SignatureResponseMapper.from(status, requestedCertificateLevel.name());
-            session.setAttribute("signing_response", signatureResponse);
+            session.setAttribute("signatureResponse", signatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException | UserSelectedWrongVerificationCodeException ex) {
             throw new SidOperationException(ex.getMessage());
         }

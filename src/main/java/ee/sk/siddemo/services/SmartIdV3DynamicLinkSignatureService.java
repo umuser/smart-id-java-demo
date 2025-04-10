@@ -50,7 +50,6 @@ import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.v3.CertificateChoiceResponse;
-import ee.sk.smartid.v3.CertificateChoiceResponseMapper;
 import ee.sk.smartid.v3.CertificateLevel;
 import ee.sk.smartid.v3.SignableData;
 import ee.sk.smartid.v3.SignatureResponseMapper;
@@ -65,50 +64,46 @@ public class SmartIdV3DynamicLinkSignatureService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdV3DynamicLinkSignatureService.class);
 
-    private final SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoice;
+    private final SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoiceService;
     private final SmartIdV3SessionsStatusService sessionsStatusService;
     private final SmartIdClient smartIdClientV3;
 
-    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoice,
+    public SmartIdV3DynamicLinkSignatureService(SmartIdV3NotificationBasedCertificateChoiceService notificationCertificateChoiceService,
                                                 SmartIdV3SessionsStatusService sessionsStatusService,
                                                 SmartIdClient smartIdClientV3) {
-        this.notificationCertificateChoice = notificationCertificateChoice;
+        this.notificationCertificateChoiceService = notificationCertificateChoiceService;
         this.sessionsStatusService = sessionsStatusService;
         this.smartIdClientV3 = smartIdClientV3;
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        notificationCertificateChoice.startCertificateChoice(session, userDocumentNumberRequest);
-        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
         var signatureCertificateLevel = CertificateLevel.QUALIFIED;
+        notificationCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest, signatureCertificateLevel);
+        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
         DynamicLinkSessionResponse sessionResponse = smartIdClientV3.createDynamicLinkSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Sign the document!")))
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .initSignatureSession();
-        Instant responseReceivedTime = Instant.now();
 
-        saveResponseAttributes(session, signatureCertificateLevel, sessionResponse, responseReceivedTime);
-
+        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.getReceivedAt());
         sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
     }
 
     public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
-        notificationCertificateChoice.startCertificateChoice(session, userRequest);
+        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
+        notificationCertificateChoiceService.startCertificateChoice(session, userRequest, signatureCertificateLevel);
         var signableData = toSignableData(userRequest.getFile(), session);
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var requestedCertificateLevel = CertificateLevel.QUALIFIED;
         DynamicLinkSessionResponse sessionResponse = smartIdClientV3.createDynamicLinkSignature()
-                .withCertificateLevel(requestedCertificateLevel)
+                .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withAllowedInteractionsOrder(List.of(DynamicLinkInteraction.displayTextAndPIN("Sign the document!")))
                 .initSignatureSession();
-        Instant responseReceivedTime = Instant.now();
 
-        saveResponseAttributes(session, requestedCertificateLevel, sessionResponse, responseReceivedTime);
-
+        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.getReceivedAt());
         sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
     }
 
@@ -157,14 +152,14 @@ public class SmartIdV3DynamicLinkSignatureService {
     private X509Certificate getX509Certificate(HttpSession session) {
         Optional<SessionStatus> certSessionStatus;
         do {
-            certSessionStatus = getCertifiateChoiceSessionStatus(session);
+            certSessionStatus = getCertificateChoiceSessionStatus(session);
         } while (certSessionStatus.isEmpty());
 
-        CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(certSessionStatus.get());
+        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(session, certSessionStatus.get());
         return certificateChoiceResponse.getCertificate();
     }
 
-    private Optional<SessionStatus> getCertifiateChoiceSessionStatus(HttpSession session) {
+    private Optional<SessionStatus> getCertificateChoiceSessionStatus(HttpSession session) {
         Optional<SessionStatus> certSessionStatus;
         try {
             certSessionStatus = sessionsStatusService.getSessionsStatus(session.getId());
@@ -179,11 +174,11 @@ public class SmartIdV3DynamicLinkSignatureService {
         session.setAttribute("dataToSign", dataToSign);
     }
 
-    private static void saveResponseAttributes(HttpSession session,
-                                               CertificateLevel requestedCertificateLevel,
-                                               DynamicLinkSessionResponse sessionResponse,
-                                               Instant responseReceivedTime) {
-        session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
+    private static void saveToSession(HttpSession session,
+                                      CertificateLevel requestedCertificateLevel,
+                                      DynamicLinkSessionResponse sessionResponse,
+                                      Instant responseReceivedTime) {
+        session.setAttribute("signatureCertificateLevel", requestedCertificateLevel);
         session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
         session.setAttribute("sessionToken", sessionResponse.getSessionToken());
         session.setAttribute("sessionID", sessionResponse.getSessionID());
@@ -200,9 +195,9 @@ public class SmartIdV3DynamicLinkSignatureService {
 
     private static void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
-            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("requestedCertificateLevel");
+            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("signatureCertificateLevel");
             var dynamicLinkSignatureResponse = SignatureResponseMapper.from(status, requestedCertificateLevel.name());
-            session.setAttribute("signing_response", dynamicLinkSignatureResponse);
+            session.setAttribute("signatureResponse", dynamicLinkSignatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         }
