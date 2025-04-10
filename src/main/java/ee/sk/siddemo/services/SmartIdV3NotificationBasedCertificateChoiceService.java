@@ -64,25 +64,33 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
     }
 
     public void startCertificateChoice(HttpSession session, @Valid UserRequest userRequest) {
+        startCertificateChoice(session, userRequest, CertificateLevel.QSCD);
+    }
+
+    public void startCertificateChoice(HttpSession session, UserRequest userRequest, CertificateLevel certificateLevel) {
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var certificateChoiceCertificateLevel = CertificateLevel.QSCD;
         NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
-                .withCertificateLevel(certificateChoiceCertificateLevel)
+                .withCertificateLevel(certificateLevel)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .initCertificateChoice();
 
-        session.setAttribute("requestedCertificateLevel", certificateChoiceCertificateLevel);
+        session.setAttribute("certificateChoiceCertificateLevel", certificateLevel);
         smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
     public void startCertificateChoice(HttpSession session, @Valid UserDocumentNumberRequest userDocumentNumberRequest) {
-        var requestedCertificateLevel = CertificateLevel.QSCD;
+        startCertificateChoice(session, userDocumentNumberRequest, CertificateLevel.QSCD);
+    }
+
+    public void startCertificateChoice(HttpSession session,
+                                       UserDocumentNumberRequest userDocumentNumberRequest,
+                                       CertificateLevel certificateLevel) {
         NotificationCertificateChoiceSessionResponse response = smartIdClientV3.createNotificationCertificateChoice()
-                .withCertificateLevel(requestedCertificateLevel)
+                .withCertificateLevel(certificateLevel)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .initCertificateChoice();
 
-        session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
+        session.setAttribute("certificateChoiceCertificateLevel", certificateLevel);
         smartIdV3SessionsStatusService.startPolling(session, response.getSessionID());
     }
 
@@ -101,16 +109,20 @@ public class SmartIdV3NotificationBasedCertificateChoiceService {
                 .orElse(false);
     }
 
-    private static void saveValidateResponse(HttpSession session, SessionStatus status) {
+    public CertificateChoiceResponse getCertificateChoice(HttpSession session, SessionStatus status) {
         try {
-            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("requestedCertificateLevel");
-            CertificateChoiceResponse certificateChoiceResponse = CertificateChoiceResponseMapper.from(status, requestedCertificateLevel);
-            String distinguishedName = certificateChoiceResponse.getCertificate().getSubjectX500Principal().getName("RFC1779", OID_MAP);
-            session.setAttribute("distinguishedName", distinguishedName);
+            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("certificateChoiceCertificateLevel");
+            return CertificateChoiceResponseMapper.from(status, requestedCertificateLevel);
         } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         } catch (SmartIdClientException ex) {
             throw new SidOperationException("Error occurred while parsing certificate", ex);
         }
+    }
+
+    private void saveValidateResponse(HttpSession session, SessionStatus status) {
+        CertificateChoiceResponse certificateChoiceResponse = getCertificateChoice(session, status);
+        String distinguishedName = certificateChoiceResponse.getCertificate().getSubjectX500Principal().getName("RFC1779", OID_MAP);
+        session.setAttribute("distinguishedName", distinguishedName);
     }
 }

@@ -42,7 +42,7 @@ public class SmartIdV3SignatureService {
     }
 
     public SigningResult handleSignatureResult(HttpSession session) {
-        var signatureResponse = (SignatureResponse) session.getAttribute("signing_response");
+        var signatureResponse = (SignatureResponse) session.getAttribute("signatureResponse");
         if (signatureResponse == null) {
             throw new SidOperationException("No signature response found in session");
         }
