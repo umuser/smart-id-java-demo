@@ -1,6 +1,7 @@
 
 > [!CAUTION]
 > v3.0 of Smart-ID API is temporary and will change in near future
+> 
 > v3.0 endpoints in Smart-ID API Demo will be supported until May 2025
 
 # Smart-ID Java Demo
