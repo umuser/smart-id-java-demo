@@ -74,9 +74,9 @@ Without following step one would not be able to connect to Demo API server:
 ### Trust store for known Smart-ID certificates
 
 
-First we create a trust store and import one of two test root certifices.
-Without following step you couldn't log in with Estonian (+37200000766) testuser.
- * import demo env "TEST of ESTEID-SK 2015" root certificate:
+First we create a trust store and import test root certifices.
+Without following step you couldn't log in with testuser.
+ * import demo env TEST-certificates:
 
         keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
          -storepass changeit -alias "TEST_of_EID-SK_2016" -file TEST_of_EID-SK_2016.pem.crt -noprompt
@@ -84,4 +84,20 @@ Without following step you couldn't log in with Estonian (+37200000766) testuser
         keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
                -storepass changeit -alias "TEST_of_NQ-SK_2016" -file TEST_of_NQ-SK_2016.pem.crt -noprompt
 
+         keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+         -storepass changeit -alias "TEST_EID-NQ_2021E" -file TEST_EID-NQ_2021E.pem.crt -noprompt
 
+        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+               -storepass changeit -alias "TEST_EID-NQ_2021R" -file TEST_EID-NQ_2021R.pem.crt -noprompt
+
+        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+               -storepass changeit -alias "TEST_EID-Q_2021E" -file TEST_EID-Q_2021E.pem.crt -noprompt
+
+        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+               -storepass changeit -alias "TEST_EID-Q_2021R" -file TEST_EID-Q_2021R.pem.crt -noprompt
+
+        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+               -storepass changeit -alias "TEST_of_SK_ID_Solutions_EID-Q_2024E" -file TEST_of_SK_ID_Solutions_EID-Q_2024E.pem.crt -noprompt
+
+        keytool -importcert -storetype PKCS12 -keystore sid.trusted_root_certs.p12 \
+               -storepass changeit -alias "TEST_of_SK_ID_Solutions_EID-Q_2024R" -file TEST_of_SK_ID_Solutions_EID-Q_2024R.pem.crt -noprompt
