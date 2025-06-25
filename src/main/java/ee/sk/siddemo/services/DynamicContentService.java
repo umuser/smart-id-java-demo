@@ -28,13 +28,12 @@ import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.model.DynamicContent;
-import ee.sk.smartid.AuthCode;
-import ee.sk.smartid.DynamicContentBuilder;
-import ee.sk.smartid.DynamicLinkType;
+import ee.sk.smartid.DeviceLinkBuilder;
+import ee.sk.smartid.DeviceLinkType;
+import ee.sk.smartid.QrCodeGenerator;
 import ee.sk.smartid.SessionType;
 import ee.sk.smartid.SmartIdClient;
 import jakarta.servlet.http.HttpSession;
@@ -43,9 +42,6 @@ import jakarta.servlet.http.HttpSession;
 public class DynamicContentService {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicContentService.class);
-
-    @Value("${sid.client.dynamic-link-url}")
-    private String dynamicLinkUrl;
 
     public final SmartIdClient smartIdClient;
 
@@ -56,30 +52,46 @@ public class DynamicContentService {
     public DynamicContent getDynamicContent(HttpSession session, SessionType sessionType) {
         String sessionSecret = (String) session.getAttribute("sessionSecret");
         String sessionToken = (String) session.getAttribute("sessionToken");
+        String deviceLinkBase = (String) session.getAttribute("deviceLinkBase");
         Instant responseReceivedTime = (Instant) session.getAttribute("responseReceivedTime");
+        String digest = (String) session.getAttribute("rpChallenge");
+        String interactions = (String) session.getAttribute("interactions");
 
-        return getDynamicContent(sessionType, sessionToken, sessionSecret, responseReceivedTime);
+        return getDynamicContent(sessionType, sessionToken, sessionSecret, deviceLinkBase, responseReceivedTime, digest, interactions);
     }
 
-    public DynamicContent getDynamicContent(SessionType sessionType, String sessionToken, String sessionSecret, Instant responseReceivedTime) {
-        long elapsedSeconds = Duration.between(responseReceivedTime, Instant.now()).getSeconds();
+    public DynamicContent getDynamicContent(SessionType sessionType, String sessionToken, String sessionSecret, String deviceLinkBase, Instant responseReceivedTime, String digest, String interactions) {
+        long elapsedSeconds = Duration.between(responseReceivedTime, java.time.Instant.now()).getSeconds();
         logger.info("Dynamic content elapsed seconds: {}", elapsedSeconds);
 
-        DynamicContentBuilder contentBuilder = smartIdClient.createDynamicContent()
-                .withBaseUrl(dynamicLinkUrl)
+        String relyingPartyName = smartIdClient.getRelyingPartyName();
+
+        URI dynamicLink = new DeviceLinkBuilder()
+                .withDeviceLinkBase(deviceLinkBase)
+                .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
                 .withSessionType(sessionType)
                 .withSessionToken(sessionToken)
-                .withElapsedSeconds(elapsedSeconds);
+                .withLang("eng")
+                .withInitialCallbackUrl("https://localhost:8080/callback")
+                .withRelyingPartyName(relyingPartyName)
+                .withInteractions(interactions)
+                .withDigest(digest)
+                .buildDeviceLink(sessionSecret);
 
-        URI dynamicLink = contentBuilder
-                .withDynamicLinkType(DynamicLinkType.WEB_2_APP)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.WEB_2_APP, sessionType, elapsedSeconds, sessionSecret))
-                .createUri();
+        URI qrLink = new DeviceLinkBuilder()
+                .withDeviceLinkBase(deviceLinkBase)
+                .withDeviceLinkType(DeviceLinkType.QR_CODE)
+                .withSessionType(sessionType)
+                .withSessionToken(sessionToken)
+                .withLang("eng")
+                .withElapsedSeconds(elapsedSeconds)
+                .withRelyingPartyName(relyingPartyName)
+                .withInteractions(interactions)
+                .withDigest(digest)
+                .buildDeviceLink(sessionSecret);
 
-        String qrDataUri = contentBuilder
-                .withDynamicLinkType(DynamicLinkType.QR_CODE)
-                .withAuthCode(AuthCode.createHash(DynamicLinkType.QR_CODE, sessionType, elapsedSeconds, sessionSecret))
-                .createQrCodeDataUri();
+        String qrDataUri = QrCodeGenerator.generateDataUri(qrLink.toString());
+
         return new DynamicContent(dynamicLink, qrDataUri);
     }
 }
