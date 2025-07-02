@@ -45,6 +45,7 @@ import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.CertificateByDocumentNumberResult;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
@@ -78,8 +79,13 @@ public class SmartIdDynamicLinkSignatureService {
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         var signatureCertificateLevel = CertificateLevel.QUALIFIED;
-        notificationCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest, signatureCertificateLevel);
-        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
+        CertificateByDocumentNumberResult certificateByDocumentNumberResult = smartIdClient
+                .createCertificateByDocumentNumber()
+                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
+                .withCertificateLevel(signatureCertificateLevel)
+                .getCertificateByDocumentNumber();
+
+        SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificateByDocumentNumberResult.certificate(), session);
         DeviceLinkSessionResponse sessionResponse = smartIdClient.createDynamicLinkSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
@@ -122,13 +128,15 @@ public class SmartIdDynamicLinkSignatureService {
                 .orElse(false);
     }
 
-    private SignableData toSignableData(MultipartFile file,
-                                        HttpSession session) {
+    private SignableData toSignableData(MultipartFile file, X509Certificate certificate, HttpSession session) {
         Container container = toContainer(file);
-        X509Certificate certificate = getX509Certificate(session);
         DataToSign dataToSign = toDataToSign(container, certificate);
         saveSigningAttributes(session, container, dataToSign);
         return new SignableData(dataToSign.getDataToSign());
+    }
+
+    private SignableData toSignableData(MultipartFile file, HttpSession session) {
+        return toSignableData(file, getX509Certificate(session), session);
     }
 
     private Container toContainer(MultipartFile file) {
@@ -155,7 +163,8 @@ public class SmartIdDynamicLinkSignatureService {
             certSessionStatus = getCertificateChoiceSessionStatus(session);
         } while (certSessionStatus.isEmpty());
 
-        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(session, certSessionStatus.get());
+        CertificateChoiceResponse certificateChoiceResponse =
+                notificationCertificateChoiceService.getCertificateChoice(session, certSessionStatus.get());
         return certificateChoiceResponse.getCertificate();
     }
 

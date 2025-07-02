@@ -115,7 +115,7 @@ public class SmartIdDeviceLinkAuthenticationService {
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withCertificateLevel(requestedCertificateLevel)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
-                .withHashAlgorithm(HashAlgorithm.SHA_512)
+                .withHashAlgorithm(HashAlgorithm.SHA3_512)
                 .withShareMdClientIpAddress(true)
                 .withInteractions(interactions)
                 .initAuthenticationSession();

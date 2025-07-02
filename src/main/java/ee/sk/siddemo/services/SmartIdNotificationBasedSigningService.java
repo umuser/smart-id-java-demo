@@ -75,8 +75,16 @@ public class SmartIdNotificationBasedSigningService {
 
     public String startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         var signatureCertificateLevel = CertificateLevel.QUALIFIED;
-        notificationCertificateChoiceService.startCertificateChoice(session, userDocumentNumberRequest, signatureCertificateLevel);
-        var signableData = toSignableData(userDocumentNumberRequest.getFile(), session);
+
+        X509Certificate certificate = smartIdClient
+                .createCertificateByDocumentNumber()
+                .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
+                .withCertificateLevel(signatureCertificateLevel)
+                .getCertificateByDocumentNumber()
+                .certificate();
+
+
+        SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificate, session);
         NotificationSignatureSessionResponse sessionResponse = smartIdClient.createNotificationSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
@@ -116,13 +124,16 @@ public class SmartIdNotificationBasedSigningService {
     }
 
     private SignableData toSignableData(MultipartFile uploadedFile, HttpSession session) {
+        return toSignableData(uploadedFile, getCertificate(session), session);
+    }
+
+    private SignableData toSignableData(MultipartFile uploadedFile, X509Certificate certificate, HttpSession session) {
         Container container = toContainer(uploadedFile);
-        X509Certificate certificate = getCertificate(session);
         DataToSign dataToSign = toDataToSign(container, certificate);
         saveSigningAttributes(session, dataToSign, container);
 
         SignableData signableData = new SignableData(dataToSign.getDataToSign());
-        signableData.setHashType(HashType.SHA256); // has to match SignatureDigestAlgorithm used in dataToSign
+        signableData.setHashType(HashType.SHA256);  // has to match SignatureDigestAlgorithm used in dataToSign
         return signableData;
     }
 
@@ -136,13 +147,13 @@ public class SmartIdNotificationBasedSigningService {
                 .build();
     }
 
-    private X509Certificate getCertificate(HttpSession httpSession) {
+    private X509Certificate getCertificate(HttpSession session) {
         Optional<SessionStatus> certSessionStatus;
         do {
-            certSessionStatus = getCertificateChoiceSessionStatus(httpSession);
+            certSessionStatus = getCertificateChoiceSessionStatus(session);
         } while (certSessionStatus.isEmpty());
 
-        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(httpSession, certSessionStatus.get());
+        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(session, certSessionStatus.get());
         return certificateChoiceResponse.getCertificate();
     }
 
