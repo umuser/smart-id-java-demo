@@ -30,24 +30,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.AuthenticationCertificateLevel;
 import ee.sk.smartid.DeviceLinkAuthenticationSessionRequestBuilder;
 import ee.sk.smartid.RpChallengeGenerator;
 import ee.sk.smartid.SignatureAlgorithm;
-import ee.sk.smartid.exception.useraction.SessionTimeoutException;
-import ee.sk.smartid.exception.useraction.UserRefusedException;
+import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.AuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.HashAlgorithm;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.AuthenticationCertificateLevel;
-import ee.sk.smartid.AuthenticationResponseMapper;
-import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.SessionStatus;
-import ee.sk.smartid.util.DeviceLinkUtil;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -80,11 +75,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         AuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        session.setAttribute("sessionID", response.getSessionID());
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("authenticationSessionRequest", request);
-        session.setAttribute("interactions", request.interactions());
+        updateSession(session, response, rpChallenge, request);
 
         smartIdSessionsStatusService.startPolling(session, response.getSessionID());
     }
@@ -105,11 +96,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         AuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("sessionID", response.getSessionID());
-        session.setAttribute("authenticationSessionRequest", request);
-        session.setAttribute("interactions", request.interactions());
+        updateSession(session, response, rpChallenge, request);
 
         smartIdSessionsStatusService.startPolling(session, response.getSessionID());
     }
@@ -129,13 +116,17 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         AuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("sessionID", response.getSessionID());
-        session.setAttribute("authenticationSessionRequest", request);
-        session.setAttribute("interactions", request.interactions());
+        updateSession(session, response, rpChallenge, request);
 
         smartIdSessionsStatusService.startPolling(session, response.getSessionID());
+    }
+
+    private static void updateSession(HttpSession session, DeviceLinkSessionResponse response, String rpChallenge, AuthenticationSessionRequest request) {
+        session.setAttribute("sessionID", response.getSessionID());
+        session.setAttribute("rpChallenge", rpChallenge);
+        session.setAttribute("sessionInitResponse", response);
+        session.setAttribute("authenticationSessionRequest", request);
+        session.setAttribute("interactions", request.interactions());
     }
 
     public boolean checkAuthenticationStatus(HttpSession session) {
