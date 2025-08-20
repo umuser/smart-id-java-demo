@@ -22,11 +22,16 @@ package ee.sk.siddemo.services;
  * #L%
  */
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 import java.time.ZonedDateTime;
 
-import org.digidoc4j.Container;
 import org.digidoc4j.DataToSign;
-import org.digidoc4j.Signature;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
@@ -45,9 +50,12 @@ public class SmartIdSignatureService {
 
     public SigningResult handleSignatureResult(HttpSession session) {
         var signatureResponse = (SignatureResponse) session.getAttribute("signatureResponse");
+        var dataToSign = (DataToSign) session.getAttribute("dataToSign");
         if (signatureResponse == null) {
             throw new SidOperationException("No signature response found in session");
         }
+
+        validateSignatureValue(signatureResponse, dataToSign);
 
         return SigningResult.newBuilder()
                 .withResult("Signing successful")
@@ -55,5 +63,26 @@ public class SmartIdSignatureService {
                 .withTimestamp(java.util.Date.from(ZonedDateTime.now().toInstant()))
                 .withContainerFilePath("N/A – container not created in demo")
                 .build();
+    }
+
+    private static void validateSignatureValue(SignatureResponse signatureResponse, DataToSign dataToSign) {
+        try {
+            var params = new PSSParameterSpec(
+                    signatureResponse.getHashAlgorithm().getAlgorithmName(),
+                    signatureResponse.getMaskGenAlgorithm().getMgfName(),
+                    new MGF1ParameterSpec(signatureResponse.getMaskHashAlgorithm().getAlgorithmName()),
+                    signatureResponse.getSaltLength(),
+                    signatureResponse.getTrailerField().getPssSpecValue()
+            );
+            var signature = Signature.getInstance(signatureResponse.getSignatureAlgorithm().getAlgorithmName());
+            signature.setParameter(params);
+            signature.initVerify(signatureResponse.getCertificate().getPublicKey());
+            signature.update(dataToSign.getDataToSign());
+            signature.verify(signatureResponse.getSignatureValue());
+        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+            throw new SidOperationException("Unable to construct signature instance", e);
+        } catch (InvalidKeyException | SignatureException e) {
+            throw new SidOperationException("Unable to validate signature", e);
+        }
     }
 }
