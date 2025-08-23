@@ -31,6 +31,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import ee.sk.smartid.AuthenticationResponseValidator;
+import ee.sk.smartid.CertificateValidator;
+import ee.sk.smartid.CertificateValidatorImpl;
 import ee.sk.smartid.FileTrustedCAStoreBuilder;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
@@ -92,25 +94,23 @@ public class SmartIdConfig {
 
     @Bean
     public AuthenticationResponseValidator authenticationResponseValidator() {
-        TrustedCACertStore trustedCACertStore = new FileTrustedCAStoreBuilder()
-                .withTrustAnchorTruststorePath(sidTrustAnchorCertsFilename)
-                .withTrustAnchorTruststorePassword(sigTrustAnchorCertsPassword)
-                .withIntermediateCATruststorePath(sidTrustedRootCertsFilename)
-                .withIntermediateCATruststorePassword(sidTrustedRootCertsPassword)
-                .build();
-        return new AuthenticationResponseValidator(trustedCACertStore);
+        return AuthenticationResponseValidator.defaultSetupWithCertificateValidator(certificateValidator());
     }
 
     @Bean
     public SignatureResponseValidator signatureResponseValidator() {
+        return new SignatureResponseValidator(certificateValidator(), false);
+    }
+
+    @Bean
+    public CertificateValidator certificateValidator() {
         TrustedCACertStore trustedCACertStore = new FileTrustedCAStoreBuilder()
-                .withOcspEnabled(false)
                 .withTrustAnchorTruststorePath(sidTrustAnchorCertsFilename)
                 .withTrustAnchorTruststorePassword(sigTrustAnchorCertsPassword)
                 .withIntermediateCATruststorePath(sidTrustedRootCertsFilename)
                 .withIntermediateCATruststorePassword(sidTrustedRootCertsPassword)
                 .build();
-        return new SignatureResponseValidator(trustedCACertStore, false);
+        return new CertificateValidatorImpl(trustedCACertStore);
     }
 
 }
