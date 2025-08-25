@@ -77,7 +77,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
         updateSession(session, response, rpChallenge, request);
 
-        smartIdSessionsStatusService.startPolling(session, response.getSessionID());
+        smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
@@ -98,7 +98,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
         updateSession(session, response, rpChallenge, request);
 
-        smartIdSessionsStatusService.startPolling(session, response.getSessionID());
+        smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     public void startAuthentication(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
@@ -118,11 +118,11 @@ public class SmartIdDeviceLinkAuthenticationService {
 
         updateSession(session, response, rpChallenge, request);
 
-        smartIdSessionsStatusService.startPolling(session, response.getSessionID());
+        smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     private static void updateSession(HttpSession session, DeviceLinkSessionResponse response, String rpChallenge, AuthenticationSessionRequest request) {
-        session.setAttribute("sessionID", response.getSessionID());
+        session.setAttribute("sessionID", response.sessionID());
         session.setAttribute("rpChallenge", rpChallenge);
         session.setAttribute("sessionInitResponse", response);
         session.setAttribute("authenticationSessionRequest", request);

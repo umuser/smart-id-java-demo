@@ -240,13 +240,11 @@
                                 <div class="container certification-choice-area" id="anonymous-certificate-choice">
                                     <div class="text-center">
                                         <h1>Smart-ID</h1>
-                                        <a th:href="@{/templates/device-link/start-certificate-choice}" class="btn btn-primary">Certificate choice</a>
-                                        <p class="text-danger"> Anonymous certificate choice uses dummy data to generate dynamic links and QR codes.
-                                            At this moment, no sessions are being created.
-                                        </p>
+                                        <a th:href="@{/device-link/start-certificate-choice}" class="btn btn-primary">Certificate choice</a>
                                         <p>
-                                            Certificate choice should be used with signing a file. For testing purposes this demo is provided
-                                            for only testing this single flow
+                                            For testing purposes the anonymous certificate choice flow is used independently,
+                                            but in real case, the linked notification based signature flow must follow.
+                                            This is why the Smart-ID app stays in waiting state.
                                         </p>
                                     </div>
                                 </div>

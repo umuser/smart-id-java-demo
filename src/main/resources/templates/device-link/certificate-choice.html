@@ -75,13 +75,13 @@
 <script th:src="@{/js/bootstrap.js}"></script>
 <script type="text/javascript">
     function loadContent() {
-        fetch('/dynamic-link/check-certificate-choice-status')
+        fetch('/device-link/check-certificate-choice-status')
             .then(response => response.json())
             .then(data => {
                 if (data.errorMessage !== undefined) {
                     window.location.href = '/session-error?errorMessage=' + data.errorMessage;
                 } else if (data.sessionStatus === 'COMPLETED') {
-                    window.location.href = '/dynamic-link/certificate-choice-result';
+                    window.location.href = '/device-link/certificate-choice-result';
                 } else {
                     document.getElementById("qr-code").src = data.qrCode;
                     document.getElementById("dynamic-link").href = data.dynamicLink;

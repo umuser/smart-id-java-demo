@@ -105,9 +105,9 @@ public class SmartIdDeviceLinkSignatureService {
                 .withInitialCallbackUrl("https://localhost:8080/callback")
                 .initSignatureSession();
 
-        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.getReceivedAt(), signableData);
+        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.receivedAt(), signableData);
         session.setAttribute("sessionInitResponse", sessionResponse);
-        sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
+        sessionsStatusService.startPolling(session, sessionResponse.sessionID());
     }
 
     public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
@@ -130,9 +130,9 @@ public class SmartIdDeviceLinkSignatureService {
                 .withInitialCallbackUrl("https://localhost:8080/callback")
                 .initSignatureSession();
 
-        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.getReceivedAt(), signableData);
+        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.receivedAt(), signableData);
         session.setAttribute("sessionInitResponse", sessionResponse);
-        sessionsStatusService.startPolling(session, sessionResponse.getSessionID());
+        sessionsStatusService.startPolling(session, sessionResponse.sessionID());
     }
 
     public boolean checkSignatureStatus(HttpSession session) {
@@ -223,10 +223,10 @@ public class SmartIdDeviceLinkSignatureService {
                                       Instant responseReceivedTime,
                                       SignableData signableData) {
         session.setAttribute("signatureCertificateLevel", requestedCertificateLevel);
-        session.setAttribute("sessionSecret", sessionResponse.getSessionSecret());
-        session.setAttribute("sessionToken", sessionResponse.getSessionToken());
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("deviceLinkBase", sessionResponse.getDeviceLinkBase().toString());
+        session.setAttribute("sessionSecret", sessionResponse.sessionSecret());
+        session.setAttribute("sessionToken", sessionResponse.sessionToken());
+        session.setAttribute("sessionID", sessionResponse.sessionID());
+        session.setAttribute("deviceLinkBase", sessionResponse.deviceLinkBase().toString());
         session.setAttribute("responseReceivedTime", responseReceivedTime);
         session.setAttribute("rpChallenge", signableData.calculateHashInBase64());
         session.setAttribute("interactions", DeviceLinkUtil.encodeToBase64(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!"))));

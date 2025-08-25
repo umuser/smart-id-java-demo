@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -38,7 +39,6 @@ import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.CertificateChoiceResponse;
-import ee.sk.smartid.CertificateChoiceResponseMapper;
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.NotificationCertificateChoiceSessionResponse;
@@ -55,11 +55,13 @@ public class SmartIdNotificationBasedCertificateChoiceService {
 
     private final SmartIdClient smartIdClient;
     private final SmartIdSessionsStatusService smartIdSessionsStatusService;
+    private final CertificateChoiceResponseValidator certificateChoiceResponseValidator;
 
     public SmartIdNotificationBasedCertificateChoiceService(SmartIdClient smartIdClient,
-                                                            SmartIdSessionsStatusService smartIdSessionsStatusService) {
+                                                            SmartIdSessionsStatusService smartIdSessionsStatusService, CertificateChoiceResponseValidator certificateChoiceResponseValidator) {
         this.smartIdClient = smartIdClient;
         this.smartIdSessionsStatusService = smartIdSessionsStatusService;
+        this.certificateChoiceResponseValidator = certificateChoiceResponseValidator;
     }
 
     public void startCertificateChoice(HttpSession session, @Valid UserRequest userRequest) {
@@ -95,7 +97,7 @@ public class SmartIdNotificationBasedCertificateChoiceService {
     public CertificateChoiceResponse getCertificateChoice(HttpSession session, SessionStatus status) {
         try {
             CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("certificateChoiceCertificateLevel");
-            return CertificateChoiceResponseMapper.from(status, requestedCertificateLevel);
+            return certificateChoiceResponseValidator.validate(status, requestedCertificateLevel);
         } catch (SessionTimeoutException | UserRefusedException | UserSelectedWrongVerificationCodeException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         } catch (SmartIdClientException ex) {
