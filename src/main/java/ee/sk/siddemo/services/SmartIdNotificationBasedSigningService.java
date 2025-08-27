@@ -193,7 +193,7 @@ public class SmartIdNotificationBasedSigningService {
     private void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
             CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("signatureCertificateLevel");
-            var signatureResponse = signatureResponseValidator.from(status, requestedCertificateLevel.name());
+            var signatureResponse = signatureResponseValidator.validate(status, requestedCertificateLevel.name());
             session.setAttribute("signatureResponse", signatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException | UserSelectedWrongVerificationCodeException ex) {
             throw new SidOperationException(ex.getMessage());

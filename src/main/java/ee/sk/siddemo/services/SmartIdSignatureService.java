@@ -24,14 +24,14 @@ package ee.sk.siddemo.services;
 
 import java.time.ZonedDateTime;
 
-import org.digidoc4j.Container;
 import org.digidoc4j.DataToSign;
-import org.digidoc4j.Signature;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.smartid.SignatureResponse;
+import ee.sk.smartid.SignatureValueValidator;
+import ee.sk.smartid.SignatureValueValidatorImpl;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -45,9 +45,16 @@ public class SmartIdSignatureService {
 
     public SigningResult handleSignatureResult(HttpSession session) {
         var signatureResponse = (SignatureResponse) session.getAttribute("signatureResponse");
+        var dataToSign = (DataToSign) session.getAttribute("dataToSign");
         if (signatureResponse == null) {
             throw new SidOperationException("No signature response found in session");
         }
+        SignatureValueValidator validator = SignatureValueValidatorImpl.getInstance();
+        validator.validate(
+                signatureResponse.getSignatureValue(),
+                dataToSign.getDataToSign(),
+                signatureResponse.getCertificate(),
+                signatureResponse.getRsaSsaPssParameters());
 
         return SigningResult.newBuilder()
                 .withResult("Signing successful")
