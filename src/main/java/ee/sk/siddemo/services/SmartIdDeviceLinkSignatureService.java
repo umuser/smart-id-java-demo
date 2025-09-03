@@ -243,7 +243,7 @@ public class SmartIdDeviceLinkSignatureService {
     private void saveValidateResponse(HttpSession session, SessionStatus status) {
         try {
             CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("signatureCertificateLevel");
-            var dynamicLinkSignatureResponse = signatureResponseValidator.validate(status, requestedCertificateLevel.name());
+            var dynamicLinkSignatureResponse = signatureResponseValidator.validate(status, requestedCertificateLevel);
             session.setAttribute("signatureResponse", dynamicLinkSignatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());

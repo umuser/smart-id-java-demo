@@ -100,7 +100,7 @@ public class SmartIdConfig {
 
     @Bean
     public SignatureResponseValidator signatureResponseValidator() {
-        return new SignatureResponseValidator(certificateValidator(), false);
+        return new SignatureResponseValidator(certificateValidator());
     }
 
     @Bean
