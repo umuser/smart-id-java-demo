@@ -38,37 +38,37 @@ import org.springframework.web.servlet.ModelAndView;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.services.DynamicContentService;
-import ee.sk.siddemo.services.SmartIdDynamicLinkCertificateChoiceService;
+import ee.sk.siddemo.services.SmartIdDeviceLinkCertificateChoiceService;
 import ee.sk.smartid.SessionType;
 import jakarta.servlet.http.HttpSession;
 
 @Controller
-public class SmartIdDynamicLinkCertificateChoiceController {
+public class SmartIdDeviceLinkCertificateChoiceController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdDynamicLinkCertificateChoiceController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SmartIdDeviceLinkCertificateChoiceController.class);
 
-    private final SmartIdDynamicLinkCertificateChoiceService smartIdDynamicLinkCertificateChoiceService;
+    private final SmartIdDeviceLinkCertificateChoiceService smartIdDeviceLinkCertificateChoiceService;
     private final DynamicContentService dynamicContentService;
 
-    public SmartIdDynamicLinkCertificateChoiceController(SmartIdDynamicLinkCertificateChoiceService smartIdDynamicLinkCertificateChoiceService,
-                                                         DynamicContentService dynamicContentService) {
-        this.smartIdDynamicLinkCertificateChoiceService = smartIdDynamicLinkCertificateChoiceService;
+    public SmartIdDeviceLinkCertificateChoiceController(SmartIdDeviceLinkCertificateChoiceService smartIdDeviceLinkCertificateChoiceService,
+                                                        DynamicContentService dynamicContentService) {
+        this.smartIdDeviceLinkCertificateChoiceService = smartIdDeviceLinkCertificateChoiceService;
         this.dynamicContentService = dynamicContentService;
     }
 
-    @GetMapping(value = "/dynamic-link/start-certificate-choice")
+    @GetMapping(value = "/device-link/start-certificate-choice")
     public ModelAndView startDynamicCertificateChoice(ModelMap model, HttpSession session) {
-        smartIdDynamicLinkCertificateChoiceService.startCertificateChoice(session);
+        smartIdDeviceLinkCertificateChoiceService.startCertificateChoice(session);
         model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("dynamic-link/certificate-choice", model);
+        return new ModelAndView("device-link/certificate-choice", model);
     }
 
-    @GetMapping(value = "/dynamic-link/check-certificate-choice-status")
+    @GetMapping(value = "/device-link/check-certificate-choice-status")
     @ResponseBody
     public ResponseEntity<Map<String, String>> checkCertificateChoiceStatus(HttpSession session) {
         boolean checkCompleted;
         try {
-            checkCompleted = smartIdDynamicLinkCertificateChoiceService.checkCertificateChoiceStatus(session);
+            checkCompleted = smartIdDeviceLinkCertificateChoiceService.checkCertificateChoiceStatus(session);
         } catch (SidOperationException ex) {
             logger.error("Error occurred while checking authentication status", ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("errorMessage", ex.getMessage()));
@@ -87,13 +87,13 @@ public class SmartIdDynamicLinkCertificateChoiceController {
         return ResponseEntity.ok(content);
     }
 
-    @GetMapping(value = "/dynamic-link/certificate-choice-result")
+    @GetMapping(value = "/device-link/certificate-choice-result")
     public ModelAndView toCertificateChoiceResult(ModelMap model, HttpSession session) {
         String documentNumber = (String) session.getAttribute("documentNumber");
         String distinguishedName = (String) session.getAttribute("distinguishedName");
         model.addAttribute("documentNumber", documentNumber);
         model.addAttribute("distinguishedName", distinguishedName);
         model.addAttribute("activeTab", "rp-api-v3");
-        return new ModelAndView("dynamic-link/certificate-choice-result", model);
+        return new ModelAndView("device-link/certificate-choice-result", model);
     }
 }

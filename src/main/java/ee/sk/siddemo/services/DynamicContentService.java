@@ -61,36 +61,36 @@ public class DynamicContentService {
                                             String digest,
                                             String interactions,
                                             DeviceLinkSessionResponse deviceLinkSessionResponse) {
-        long elapsedSeconds = Duration.between(deviceLinkSessionResponse.getReceivedAt(), Instant.now()).getSeconds();
+        long elapsedSeconds = Duration.between(deviceLinkSessionResponse.receivedAt(), Instant.now()).getSeconds();
         logger.info("Dynamic content elapsed seconds: {}", elapsedSeconds);
 
         String relyingPartyName = smartIdClient.getRelyingPartyName();
 
         URI dynamicLink = new DeviceLinkBuilder()
                 .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(deviceLinkSessionResponse.getDeviceLinkBase().toString())
+                .withDeviceLinkBase(deviceLinkSessionResponse.deviceLinkBase().toString())
                 .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
                 .withSessionType(sessionType)
-                .withSessionToken(deviceLinkSessionResponse.getSessionToken())
+                .withSessionToken(deviceLinkSessionResponse.sessionToken())
                 .withLang("eng")
                 .withInitialCallbackUrl("https://localhost:8080/callback")
                 .withRelyingPartyName(relyingPartyName)
                 .withInteractions(interactions)
                 .withDigest(digest)
-                .buildDeviceLink(deviceLinkSessionResponse.getSessionSecret());
+                .buildDeviceLink(deviceLinkSessionResponse.sessionSecret());
 
         URI qrLink = new DeviceLinkBuilder()
                 .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(deviceLinkSessionResponse.getDeviceLinkBase().toString())
+                .withDeviceLinkBase(deviceLinkSessionResponse.deviceLinkBase().toString())
                 .withDeviceLinkType(DeviceLinkType.QR_CODE)
                 .withSessionType(sessionType)
-                .withSessionToken(deviceLinkSessionResponse.getSessionToken())
+                .withSessionToken(deviceLinkSessionResponse.sessionToken())
                 .withLang("eng")
                 .withElapsedSeconds(elapsedSeconds)
                 .withRelyingPartyName(relyingPartyName)
                 .withInteractions(interactions)
                 .withDigest(digest)
-                .buildDeviceLink(deviceLinkSessionResponse.getSessionSecret());
+                .buildDeviceLink(deviceLinkSessionResponse.sessionSecret());
 
         String qrDataUri = QrCodeGenerator.generateDataUri(qrLink.toString());
 

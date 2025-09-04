@@ -49,7 +49,7 @@ public class SmartIdSignatureService {
         if (signatureResponse == null) {
             throw new SidOperationException("No signature response found in session");
         }
-        SignatureValueValidator validator = SignatureValueValidatorImpl.getInstance();
+        SignatureValueValidator validator = new SignatureValueValidatorImpl();
         validator.validate(
                 signatureResponse.getSignatureValue(),
                 dataToSign.getDataToSign(),
