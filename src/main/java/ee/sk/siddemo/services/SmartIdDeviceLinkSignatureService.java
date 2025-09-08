@@ -53,7 +53,6 @@ import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
-import ee.sk.smartid.rest.dao.HashAlgorithm;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateLevel;
@@ -99,7 +98,6 @@ public class SmartIdDeviceLinkSignatureService {
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
-                .withHashAlgorithm(HashAlgorithm.SHA_512)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!")))
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withInitialCallbackUrl("https://localhost:8080/callback")
@@ -125,7 +123,6 @@ public class SmartIdDeviceLinkSignatureService {
                 .withSignableData(signableData)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
-                .withHashAlgorithm(HashAlgorithm.SHA_512)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!")))
                 .withInitialCallbackUrl("https://localhost:8080/callback")
                 .initSignatureSession();
@@ -228,7 +225,7 @@ public class SmartIdDeviceLinkSignatureService {
         session.setAttribute("sessionID", sessionResponse.sessionID());
         session.setAttribute("deviceLinkBase", sessionResponse.deviceLinkBase().toString());
         session.setAttribute("responseReceivedTime", responseReceivedTime);
-        session.setAttribute("rpChallenge", signableData.calculateHashInBase64());
+        session.setAttribute("rpChallenge", signableData.getDigestInBase64());
         session.setAttribute("interactions", DeviceLinkUtil.encodeToBase64(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!"))));
     }
 

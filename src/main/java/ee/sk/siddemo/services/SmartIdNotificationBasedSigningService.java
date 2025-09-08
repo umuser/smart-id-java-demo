@@ -41,7 +41,7 @@ import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.smartid.HashType;
+import ee.sk.smartid.HashAlgorithm;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
@@ -133,9 +133,8 @@ public class SmartIdNotificationBasedSigningService {
         DataToSign dataToSign = toDataToSign(container, certificate);
         saveSigningAttributes(session, dataToSign, container);
 
-        SignableData signableData = new SignableData(dataToSign.getDataToSign());
-        signableData.setHashType(HashType.SHA256);  // has to match SignatureDigestAlgorithm used in dataToSign
-        return signableData;
+        // hash algorithm has to match SignatureDigestAlgorithm used in dataToSign
+        return new SignableData(dataToSign.getDataToSign(), HashAlgorithm.SHA_256);
     }
 
     private Container toContainer(MultipartFile userDocumentNumberRequest) {
