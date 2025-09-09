@@ -27,6 +27,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import ee.sk.siddemo.model.LinkedSigningRequest;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 
@@ -41,6 +42,11 @@ public class SmartIdController {
     @ModelAttribute("userDocumentNumberRequest")
     public UserDocumentNumberRequest userDocumentNumberRequest() {
         return new UserDocumentNumberRequest();
+    }
+
+    @ModelAttribute("linkedSigningRequest")
+    public LinkedSigningRequest linkedSigningRequest() {
+        return new LinkedSigningRequest();
     }
 
     @GetMapping(value = "/rp-api-v3")
