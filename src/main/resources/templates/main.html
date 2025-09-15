@@ -31,6 +31,11 @@
                         Signature
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="linked-signing-tab" role="tab" aria-controls="linked-signing-tab-pane" aria-selected="false">
+                        Linked signature
+                    </a>
+                </li>
             </ul>
 
             <div class="content-area tab-content" id="v3-flow-tab-panes">
@@ -501,8 +506,44 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <!-- Linked signing -->
+                <div class="tab-pane" id="linked-signing-tab-pane" role="tabpanel" aria-labelledby="linked-signing-tab-pane">
+                    <div class="row border rounded p-3 bg-light">
+                        <!-- Sidebar -->
+                        <div class="col-md-4 bg-light border-right p-3 h-100" id="linked-signing-sidebar">
+                            <h5 class="text-uppercase fw-bold mb-2">Linked signing</h5>
+                            <div class="ms-3">
+                               Linked signing uses anonymous device link certificate choice and linked notification based signing
+                            </div>
+                        </div>
+                        <!-- Content -->
+                        <div class="col-md-8 p-3">
+                            <div class="container h-100 d-flex align-items-center justify-content-center content-area w-100">
+                                <form method="POST"
+                                      th:action="@{/linked/start-signing}"
+                                      th:object="${linkedSigningRequest}"
+                                      class="form-action"
+                                      enctype="multipart/form-data">
+                                    <div class="form-group">
+                                        <label for="document-to-be-signed">Document to sign (max 10 MB)</label>
+                                        <br>
+                                        <input type="file" th:field="*{file}" id="document-to-be-signed">
+                                        <div th:if="${#fields.hasErrors('file')}" th:errors="*{file}" style="color:red">
+                                            file Error
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-primary">Sign</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 </main>
