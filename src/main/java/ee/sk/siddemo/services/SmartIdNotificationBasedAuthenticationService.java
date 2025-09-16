@@ -30,16 +30,14 @@ import org.springframework.stereotype.Service;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
-import ee.sk.smartid.RpChallengeGenerator;
-import ee.sk.smartid.exception.useraction.SessionTimeoutException;
-import ee.sk.smartid.exception.useraction.UserRefusedException;
-import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.AuthenticationCertificateLevel;
-import ee.sk.smartid.AuthenticationResponseMapper;
+import ee.sk.smartid.RpChallenge;
+import ee.sk.smartid.RpChallengeGenerator;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.VerificationCodeCalculator;
+import ee.sk.smartid.common.notification.interactions.NotificationInteraction;
 import ee.sk.smartid.rest.dao.NotificationAuthenticationSessionResponse;
-import ee.sk.smartid.rest.dao.NotificationInteraction;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -60,35 +58,38 @@ public class SmartIdNotificationBasedAuthenticationService {
     public String startAuthenticationWithPersonCode(HttpSession session, UserRequest userRequest) {
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
 
-        String rpChallenge = RpChallengeGenerator.generate();
+        RpChallenge rpChallenge = RpChallengeGenerator.generate();
+        String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
+
         var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
                 .withSemanticsIdentifier(semanticsIdentifier)
-                .withRandomChallenge(rpChallenge)
+                .withRandomChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(authenticationCertificateLevel)
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice(displayText)))
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
                 .initAuthenticationSession();
 
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("randomChallenge", rpChallenge);
+        session.setAttribute("sessionID", sessionResponse.sessionID());
+        session.setAttribute("rpChallenge", rpChallenge);
         session.setAttribute("requestedCertificateLevel", authenticationCertificateLevel);
-        return sessionResponse.getVc().getValue();
+        return verificationCode;
     }
 
     public String startAuthenticationWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        String rpChallenge = RpChallengeGenerator.generate();
+        RpChallenge rpChallenge = RpChallengeGenerator.generate();
+        String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
         var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withRandomChallenge(rpChallenge)
+                .withRandomChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(requestedCertificateLevel)
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice(displayText)))
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
                 .initAuthenticationSession();
 
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
+        session.setAttribute("sessionID", sessionResponse.sessionID());
         session.setAttribute("randomChallenge", rpChallenge);
         session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
-        return sessionResponse.getVc().getValue();
+        return verificationCode;
     }
 
     public void checkAuthenticationStatus(HttpSession session) {
