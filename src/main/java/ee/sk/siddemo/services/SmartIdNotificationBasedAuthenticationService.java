@@ -64,7 +64,7 @@ public class SmartIdNotificationBasedAuthenticationService {
         var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
                 .withSemanticsIdentifier(semanticsIdentifier)
-                .withRandomChallenge(rpChallenge.toBase64EncodedValue())
+                .withRpChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(authenticationCertificateLevel)
                 .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
                 .initAuthenticationSession();
@@ -81,13 +81,13 @@ public class SmartIdNotificationBasedAuthenticationService {
         var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withRandomChallenge(rpChallenge.toBase64EncodedValue())
+                .withRpChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(requestedCertificateLevel)
                 .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
                 .initAuthenticationSession();
 
         session.setAttribute("sessionID", sessionResponse.sessionID());
-        session.setAttribute("randomChallenge", rpChallenge);
+        session.setAttribute("rpChallenge", rpChallenge);
         session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
         return verificationCode;
     }
