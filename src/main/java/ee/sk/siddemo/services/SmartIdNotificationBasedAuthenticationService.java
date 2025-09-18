@@ -31,6 +31,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.AuthenticationCertificateLevel;
+import ee.sk.smartid.NotificationAuthenticationSessionRequestBuilder;
 import ee.sk.smartid.RpChallenge;
 import ee.sk.smartid.RpChallengeGenerator;
 import ee.sk.smartid.SmartIdClient;
@@ -79,16 +80,15 @@ public class SmartIdNotificationBasedAuthenticationService {
         RpChallenge rpChallenge = RpChallengeGenerator.generate();
         String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
         var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
-        NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
+        NotificationAuthenticationSessionRequestBuilder builder = smartIdClient.createNotificationAuthentication()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withRpChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(requestedCertificateLevel)
-                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
-                .initAuthenticationSession();
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)));
+        NotificationAuthenticationSessionResponse sessionResponse = builder.initAuthenticationSession();
 
         session.setAttribute("sessionID", sessionResponse.sessionID());
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("requestedCertificateLevel", requestedCertificateLevel);
+        session.setAttribute("notificationAuthenticationSessionRequest", builder.getAuthenticationSessionRequest());
         return verificationCode;
     }
 

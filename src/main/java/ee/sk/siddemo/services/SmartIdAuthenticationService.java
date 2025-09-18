@@ -26,30 +26,46 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.smartid.AuthenticationIdentity;
-import ee.sk.smartid.AuthenticationResponseValidator;
+import ee.sk.smartid.DeviceLinkAuthenticationResponseValidator;
+import ee.sk.smartid.NotificationAuthenticationResponseValidator;
 import ee.sk.smartid.exception.UnprocessableSmartIdResponseException;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.rest.dao.DeviceLinkAuthenticationSessionRequest;
+import ee.sk.smartid.rest.dao.NotificationAuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
 @Service
 public class SmartIdAuthenticationService {
 
-    private final AuthenticationResponseValidator authenticationResponseValidator;
+    private final DeviceLinkAuthenticationResponseValidator deviceLinkAuthenticationResponseValidator;
+    private final NotificationAuthenticationResponseValidator notificationAuthenticationResponseValidator;
 
-    public SmartIdAuthenticationService(AuthenticationResponseValidator authenticationResponseValidator) {
-        this.authenticationResponseValidator = authenticationResponseValidator;
+    public SmartIdAuthenticationService(DeviceLinkAuthenticationResponseValidator deviceLinkAuthenticationResponseValidator,
+                                        NotificationAuthenticationResponseValidator notificationAuthenticationResponseValidator) {
+        this.deviceLinkAuthenticationResponseValidator = deviceLinkAuthenticationResponseValidator;
+        this.notificationAuthenticationResponseValidator = notificationAuthenticationResponseValidator;
     }
 
     public AuthenticationIdentity authenticate(HttpSession session) {
         // validate sessions status for dynamic link authentication
         SessionStatus response = (SessionStatus) session.getAttribute("authenticationSessionStatus");
-        DeviceLinkAuthenticationSessionRequest request = (DeviceLinkAuthenticationSessionRequest) session.getAttribute("authenticationSessionRequest");
+        DeviceLinkAuthenticationSessionRequest deviceLinkAuthenticationSessionRequest = (DeviceLinkAuthenticationSessionRequest) session.getAttribute("authenticationSessionRequest");
+        AuthenticationIdentity authenticationIdentity = null;
+        if (deviceLinkAuthenticationSessionRequest != null) {
+            // validate and map authentication response to authentication identity
+            authenticationIdentity = deviceLinkAuthenticationResponseValidator.validate(response, deviceLinkAuthenticationSessionRequest, "smart-id-demo");
+        }
+        NotificationAuthenticationSessionRequest notificationAuthenticationSessionRequest = (NotificationAuthenticationSessionRequest) session.getAttribute("notificationAuthenticationSessionRequest");
+        if (notificationAuthenticationSessionRequest != null) {
+            // validate and map authentication response to authentication identity
+            authenticationIdentity = notificationAuthenticationResponseValidator.validate(response, notificationAuthenticationSessionRequest, "smart-id-demo");
+        }
+        if (authenticationIdentity == null){
+            throw new SidOperationException("No authentication session request found in the current session");
+        }
 
         try {
-            // validate and map authentication response to authentication identity
-            AuthenticationIdentity authenticationIdentity = authenticationResponseValidator.validate(response, request, "smart-id-demo");
             // invalidate current session after successful authentication
             session.invalidate();
             return authenticationIdentity;

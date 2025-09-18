@@ -24,24 +24,17 @@ package ee.sk.siddemo.model;
 
 
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.AuthenticationHash;
 
 public class AuthenticationSessionInfo {
 
-    private final AuthenticationHash authenticationHash;
     private final String verificationCode;
     private final UserRequest userRequest;
     private final SemanticsIdentifier semanticsIdentifier;
 
     private AuthenticationSessionInfo(Builder builder) {
-        this.authenticationHash = builder.authenticationHash;
         this.verificationCode = builder.verificationCode;
         this.userRequest = builder.userRequest;
         this.semanticsIdentifier = builder.semanticsIdentifier;
-    }
-
-    public AuthenticationHash getAuthenticationHash() {
-        return authenticationHash;
     }
 
     public String getVerificationCode() {
@@ -63,16 +56,10 @@ public class AuthenticationSessionInfo {
     public static class Builder {
         private String verificationCode;
         private UserRequest userRequest;
-        private AuthenticationHash authenticationHash;
 
         private SemanticsIdentifier semanticsIdentifier;
 
         private Builder() {
-        }
-
-        public Builder withAuthenticationHash(AuthenticationHash authenticationHash) {
-            this.authenticationHash = authenticationHash;
-            return this;
         }
 
         public Builder withVerificationCode(String verificationCode) {
