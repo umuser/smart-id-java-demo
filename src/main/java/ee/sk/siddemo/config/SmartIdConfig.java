@@ -30,11 +30,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import ee.sk.smartid.AuthenticationResponseValidator;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.CertificateValidator;
 import ee.sk.smartid.CertificateValidatorImpl;
+import ee.sk.smartid.DeviceLinkAuthenticationResponseValidator;
 import ee.sk.smartid.FileTrustedCAStoreBuilder;
+import ee.sk.smartid.NotificationAuthenticationResponseValidator;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.TrustedCACertStore;
@@ -94,8 +95,13 @@ public class SmartIdConfig {
     }
 
     @Bean
-    public AuthenticationResponseValidator authenticationResponseValidator() {
-        return AuthenticationResponseValidator.defaultSetupWithCertificateValidator(certificateValidator());
+    public DeviceLinkAuthenticationResponseValidator deviceLinkAuthenticationResponseValidator() {
+        return DeviceLinkAuthenticationResponseValidator.defaultSetupWithCertificateValidator(certificateValidator());
+    }
+
+    @Bean
+    public NotificationAuthenticationResponseValidator notificationAuthenticationResponseValidator() {
+        return NotificationAuthenticationResponseValidator.defaultSetupWithCertificateValidator(certificateValidator());
     }
 
     @Bean

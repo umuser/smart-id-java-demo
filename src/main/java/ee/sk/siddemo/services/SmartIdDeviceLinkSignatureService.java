@@ -46,12 +46,13 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateByDocumentNumberResult;
+import ee.sk.smartid.DeviceLinkSignatureSessionRequestBuilder;
 import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SignatureResponse;
+import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
-import ee.sk.smartid.rest.dao.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.CertificateChoiceResponse;
@@ -60,7 +61,7 @@ import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.SessionStatus;
-import ee.sk.smartid.util.DeviceLinkUtil;
+import ee.sk.smartid.rest.dao.SignatureSessionRequest;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -91,20 +92,19 @@ public class SmartIdDeviceLinkSignatureService {
                 .getCertificateByDocumentNumber();
 
         SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificateByDocumentNumberResult.certificate(), session);
-        List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!"));
-        String interactionsB64 = DeviceLinkUtil.encodeToBase64(interactions);
-        session.setAttribute("interactions", interactionsB64);
-        DeviceLinkSessionResponse sessionResponse = smartIdClient.createDeviceLinkSignature()
+        var deviceLinkSignatureSessionRequestBuilder = smartIdClient.createDeviceLinkSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
-                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!")))
+                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign the document!")))
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withInitialCallbackUrl("https://localhost:8080/callback")
-                .initSignatureSession();
+                .withInitialCallbackUrl("https://localhost:8080/callback");
+        DeviceLinkSessionResponse sessionResponse = deviceLinkSignatureSessionRequestBuilder.initSignatureSession();
+        SignatureSessionRequest sessionRequest = deviceLinkSignatureSessionRequestBuilder.getSignatureSessionRequest();
 
-        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.receivedAt(), signableData);
+        saveToSession(session, signatureCertificateLevel, sessionResponse, signableData, sessionRequest);
         session.setAttribute("sessionInitResponse", sessionResponse);
+
         sessionsStatusService.startPolling(session, sessionResponse.sessionID());
     }
 
@@ -118,17 +118,18 @@ public class SmartIdDeviceLinkSignatureService {
                 .getCertificateByDocumentNumber();
         SignableData signableData = toSignableData(userRequest.getFile(), certificateByDocumentNumberResult.certificate(), session);
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        DeviceLinkSessionResponse sessionResponse = smartIdClient.createDeviceLinkSignature()
+        DeviceLinkSignatureSessionRequestBuilder builder = smartIdClient.createDeviceLinkSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
-                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!")))
-                .withInitialCallbackUrl("https://localhost:8080/callback")
-                .initSignatureSession();
+                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign the document!")))
+                .withInitialCallbackUrl("https://localhost:8080/callback");
+        DeviceLinkSessionResponse sessionResponse = builder.initSignatureSession();
+        SignatureSessionRequest sessionRequest = builder.getSignatureSessionRequest();
 
-        saveToSession(session, signatureCertificateLevel, sessionResponse, sessionResponse.receivedAt(), signableData);
-        session.setAttribute("sessionInitResponse", sessionResponse);
+        saveToSession(session, signatureCertificateLevel, sessionResponse,  signableData, sessionRequest);
+        session.setAttribute("sessionInitResponse", sessionResponse); // TODO - 16.09.25: review this usage
         sessionsStatusService.startPolling(session, sessionResponse.sessionID());
     }
 
@@ -217,16 +218,16 @@ public class SmartIdDeviceLinkSignatureService {
     private static void saveToSession(HttpSession session,
                                       CertificateLevel requestedCertificateLevel,
                                       DeviceLinkSessionResponse sessionResponse,
-                                      Instant responseReceivedTime,
-                                      SignableData signableData) {
+                                      SignableData signableData,
+                                      SignatureSessionRequest request) {
         session.setAttribute("signatureCertificateLevel", requestedCertificateLevel);
         session.setAttribute("sessionSecret", sessionResponse.sessionSecret());
         session.setAttribute("sessionToken", sessionResponse.sessionToken());
         session.setAttribute("sessionID", sessionResponse.sessionID());
         session.setAttribute("deviceLinkBase", sessionResponse.deviceLinkBase().toString());
-        session.setAttribute("responseReceivedTime", responseReceivedTime);
+        session.setAttribute("responseReceivedTime", sessionResponse.receivedAt());
         session.setAttribute("rpChallenge", signableData.getDigestInBase64());
-        session.setAttribute("interactions", DeviceLinkUtil.encodeToBase64(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign the document!"))));
+        session.setAttribute("interactions", request.interactions());
     }
 
     private static DataToSign toDataToSign(Container container, X509Certificate certificate) {

@@ -50,10 +50,10 @@ import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
-import ee.sk.smartid.rest.dao.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.LinkedSignatureSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
@@ -82,7 +82,7 @@ public class SmartIdLinkedSigningService {
     }
 
     public void startSigning(HttpSession session, @Valid LinkedSigningRequest linkedSigningRequest) {
-        CertificateLevel certificateLevel = CertificateLevel.ADVANCED;
+        CertificateLevel certificateLevel = CertificateLevel.QUALIFIED;
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(certificateLevel)
                 .initCertificateChoice();
@@ -120,7 +120,7 @@ public class SmartIdLinkedSigningService {
                 .withLinkedSessionID(deviceLinkSessionResponse.sessionID())
                 .withCertificateLevel(requestCertificateLevel)
                 .withSignableData(signableData)
-                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPIN("Sign it!")))
+                .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign it!")))
                 .initSignatureSession();
         smartIdSessionsStatusService.startPolling(session, linkedSignatureSessionResponse.sessionID());
     }

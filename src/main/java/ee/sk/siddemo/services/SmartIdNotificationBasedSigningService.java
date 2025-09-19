@@ -42,6 +42,7 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.HashAlgorithm;
+import ee.sk.smartid.common.notification.interactions.NotificationInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
@@ -52,7 +53,6 @@ import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
-import ee.sk.smartid.rest.dao.NotificationInteraction;
 import ee.sk.smartid.rest.dao.NotificationSignatureSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
@@ -90,7 +90,7 @@ public class SmartIdNotificationBasedSigningService {
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice("Sign the document!")))
+                .withAllowedInteractionsOrder(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
@@ -107,7 +107,7 @@ public class SmartIdNotificationBasedSigningService {
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSemanticsIdentifier(semanticsIdentifier)
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.verificationCodeChoice("Sign the document!")))
+                .withAllowedInteractionsOrder(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
                 .initSignatureSession();
 
         session.setAttribute("sessionID", sessionResponse.getSessionID());
