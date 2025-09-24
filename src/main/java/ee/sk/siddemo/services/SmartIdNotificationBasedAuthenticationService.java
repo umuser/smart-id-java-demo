@@ -63,16 +63,15 @@ public class SmartIdNotificationBasedAuthenticationService {
         String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
 
         var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
-        NotificationAuthenticationSessionResponse sessionResponse = smartIdClient.createNotificationAuthentication()
+        NotificationAuthenticationSessionRequestBuilder builder = smartIdClient.createNotificationAuthentication()
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withRpChallenge(rpChallenge.toBase64EncodedValue())
                 .withCertificateLevel(authenticationCertificateLevel)
-                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)))
-                .initAuthenticationSession();
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)));
+        NotificationAuthenticationSessionResponse sessionResponse = builder.initAuthenticationSession();
 
         session.setAttribute("sessionID", sessionResponse.sessionID());
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("requestedCertificateLevel", authenticationCertificateLevel);
+        session.setAttribute("notificationAuthenticationSessionRequest", builder.getAuthenticationSessionRequest());
         return verificationCode;
     }
 
