@@ -61,14 +61,15 @@ public class SmartIdDeviceLinkCertificateChoiceService {
     }
 
     public void startCertificateChoice(HttpSession session) {
+        CertificateLevel requesteCertificateLevel = CertificateLevel.ADVANCED;
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
-                .withCertificateLevel(CertificateLevel.QUALIFIED)
+                .withCertificateLevel(requesteCertificateLevel)
                 .withShareMdClientIpAddress(true)
                 .initCertificateChoice();
 
         session.setAttribute("sessionID", response.sessionID());
         session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("certificateLevel", CertificateLevel.QUALIFIED);
+        session.setAttribute("certificateLevel", requesteCertificateLevel);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
