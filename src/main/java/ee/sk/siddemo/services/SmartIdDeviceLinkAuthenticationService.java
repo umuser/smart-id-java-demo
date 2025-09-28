@@ -64,7 +64,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
     public void startAuthentication(HttpSession session) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
                 .withCertificateLevel(authenticationCertificateLevel)
@@ -83,7 +83,7 @@ public class SmartIdDeviceLinkAuthenticationService {
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPin(displayText));
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)

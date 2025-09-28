@@ -22,7 +22,6 @@ package ee.sk.siddemo.controller;
  * #L%
  */
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -36,7 +35,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
-import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdDeviceLinkCertificateChoiceService;
 import ee.sk.smartid.SessionType;
@@ -77,14 +75,17 @@ public class SmartIdDeviceLinkCertificateChoiceController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
+        return ResponseEntity.ok(Map.of("sessionStatus", "RUNNING"));
+    }
 
-        // Generate QR-code and dynamic link
-        logger.debug("Generate dynamic content for session {}", session.getId());
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.CERTIFICATE_CHOICE);
-        Map<String, String> content = new HashMap<>();
-        content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
-        content.put("qrCode", dynamicContent.getQrCode());
-        return ResponseEntity.ok(content);
+    @GetMapping(value = "/device-link/cert-choice/qr-code")
+    public ResponseEntity<String> getQrCode(HttpSession session) {
+        return ResponseEntity.ok(dynamicContentService.getQrCode(session, SessionType.CERTIFICATE_CHOICE));
+    }
+
+    @GetMapping(value = "/device-link/cert-choice/url")
+    public ResponseEntity<String> getUrl(HttpSession session) {
+        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.CERTIFICATE_CHOICE));
     }
 
     @GetMapping(value = "/device-link/certificate-choice-result")

@@ -91,19 +91,7 @@
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="country"> Select country </label>
-                                            <select th:field="*{country}" id="country" class="form-control" name="country">
-                                                <option th:value="'EE'" value="EE">Estonia</option>
-                                                <option th:value="'LV'" value="LV">Latvia</option>
-                                                <option th:value="'LT'" th:text="Lithuania"></option>
-                                                <option th:value="'BE'" th:text="Belgium"></option>
-                                            </select>
-                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
-                                                country Error
-                                            </div>
-                                        </div>
-
+                                        <div th:replace="~{fragments/country-selection::countrySelection}"></div>
                                         <div class="form-group">
                                             <label for="person-code">Person code</label>
                                             <input th:field="*{nationalIdentityNumber}" type="text" id="person-code" class="form-control"
@@ -151,18 +139,7 @@
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="notification-auth-country"> Select country </label>
-                                            <select th:field="*{country}" id="notification-auth-country" class="form-control" name="country">
-                                                <option th:value="'EE'" value="EE">Estonia</option>
-                                                <option th:value="'LV'" value="LV">Latvia</option>
-                                                <option th:value="'LT'" th:text="Lithuania"></option>
-                                                <option th:value="'BE'" th:text="Belgium"></option>
-                                            </select>
-                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
-                                                country Error
-                                            </div>
-                                        </div>
+                                        <div th:replace="~{fragments/country-selection::countrySelection}"></div>
 
                                         <div class="form-group">
                                             <label for="notification-auth-person-code">Person code</label>
@@ -262,18 +239,7 @@
                                         <div class="text-center">
                                             <h1>Smart-ID</h1>
                                         </div>
-                                        <div class="form-group">
-                                            <label for="cert-choice-country"> Select country </label>
-                                            <select th:field="*{country}" id="cert-choice-country" class="form-control" name="country">
-                                                <option th:value="'EE'" value="EE">Estonia</option>
-                                                <option th:value="'LV'" value="LV">Latvia</option>
-                                                <option th:value="'LT'" th:text="Lithuania"></option>
-                                                <option th:value="'BE'" th:text="Belgium"></option>
-                                            </select>
-                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
-                                                country Error
-                                            </div>
-                                        </div>
+                                        <div th:replace="~{fragments/country-selection::countrySelection}"></div>
 
                                         <div class="form-group">
                                             <label for="cert-choice-person-code">Person code</label>
@@ -385,18 +351,8 @@
                                           class="form-action"
                                           enctype="multipart/form-data">
 
-                                        <div class="form-group">
-                                            <label for="device-link-signing-country"> Select country </label>
-                                            <select th:field="*{country}" id="device-link-signing-country" class="form-control" name="country">
-                                                <option th:value="'EE'" value="EE">Estonia</option>
-                                                <option th:value="'LV'" value="LV">Latvia</option>
-                                                <option th:value="'LT'" th:text="Lithuania"></option>
-                                                <option th:value="'BE'" th:text="Belgium"></option>
-                                            </select>
-                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
-                                                country Error
-                                            </div>
-                                        </div>
+                                        <div th:replace="~{fragments/country-selection::countrySelection}"></div>
+
                                         <div class="form-group">
                                             <label for="device-link-sign-person-code"> Person code</label>
                                             <input th:field="*{nationalIdentityNumber}"
@@ -438,18 +394,8 @@
                                           class="form-action"
                                           enctype="multipart/form-data">
 
-                                        <div class="form-group">
-                                            <label for="notification-signing-country"> Select country </label>
-                                            <select th:field="*{country}" id="notification-signing-country" class="form-control" name="country">
-                                                <option th:value="'EE'" value="EE">Estonia</option>
-                                                <option th:value="'LV'" value="LV">Latvia</option>
-                                                <option th:value="'LT'" th:text="Lithuania"></option>
-                                                <option th:value="'BE'" th:text="Belgium"></option>
-                                            </select>
-                                            <div th:if="${#fields.hasErrors('country')}" th:errors="*{country}" style="color:red">
-                                                country Error
-                                            </div>
-                                        </div>
+                                        <div th:replace="~{fragments/country-selection::countrySelection}"></div>
+
                                         <div class="form-group">
                                             <label for="device-link-sign-person-code"> Person code</label>
                                             <input th:field="*{nationalIdentityNumber}"
@@ -514,7 +460,7 @@
                         <div class="col-md-4 bg-light border-right p-3 h-100" id="linked-signing-sidebar">
                             <h5 class="text-uppercase fw-bold mb-2">Linked signing</h5>
                             <div class="ms-3">
-                               Linked signing uses anonymous device link certificate choice and linked notification based signing
+                                Linked signing uses anonymous device link certificate choice and linked notification based signing
                             </div>
                         </div>
                         <!-- Content -->

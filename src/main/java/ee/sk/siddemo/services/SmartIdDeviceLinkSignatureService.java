@@ -24,7 +24,6 @@ package ee.sk.siddemo.services;
 
 import java.io.IOException;
 import java.security.cert.X509Certificate;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,20 +45,20 @@ import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.CertificateByDocumentNumberResult;
+import ee.sk.smartid.CertificateChoiceResponse;
+import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.DeviceLinkSignatureSessionRequestBuilder;
+import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SignatureResponse;
+import ee.sk.smartid.SignatureResponseValidator;
+import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.CertificateChoiceResponse;
-import ee.sk.smartid.CertificateLevel;
-import ee.sk.smartid.SignableData;
-import ee.sk.smartid.SignatureResponseValidator;
-import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import ee.sk.smartid.rest.dao.SignatureSessionRequest;
 import jakarta.servlet.http.HttpSession;
@@ -84,7 +83,7 @@ public class SmartIdDeviceLinkSignatureService {
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
+        var signatureCertificateLevel = CertificateLevel.ADVANCED;
         CertificateByDocumentNumberResult certificateByDocumentNumberResult = smartIdClient
                 .createCertificateByDocumentNumber()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
@@ -128,7 +127,7 @@ public class SmartIdDeviceLinkSignatureService {
         DeviceLinkSessionResponse sessionResponse = builder.initSignatureSession();
         SignatureSessionRequest sessionRequest = builder.getSignatureSessionRequest();
 
-        saveToSession(session, signatureCertificateLevel, sessionResponse,  signableData, sessionRequest);
+        saveToSession(session, signatureCertificateLevel, sessionResponse, signableData, sessionRequest);
         session.setAttribute("sessionInitResponse", sessionResponse); // TODO - 16.09.25: review this usage
         sessionsStatusService.startPolling(session, sessionResponse.sessionID());
     }
