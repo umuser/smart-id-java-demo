@@ -33,11 +33,11 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.client.SmartIdMockDeviceLinkClient;
 import ee.sk.siddemo.model.DeviceLinkMockRequest;
+import ee.sk.siddemo.model.DeviceLinkSessionInfo;
 import ee.sk.smartid.DeviceLinkType;
 import ee.sk.smartid.QrCodeGenerator;
 import ee.sk.smartid.SessionType;
 import ee.sk.smartid.SmartIdClient;
-import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -47,36 +47,36 @@ public class DynamicContentService {
 
     private final SmartIdClient smartIdClient;
     private final SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient;
+    private final SessionStore sessionStore;
 
     @Value("${sid.useMockService:false}")
     private boolean useMockService; // TODO - 28.09.25: make it interactive in frontend as a choice, then it also should provide input for document number
 
-    public DynamicContentService(SmartIdClient smartIdClient, SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient) {
+    public DynamicContentService(SmartIdClient smartIdClient,
+                                 SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient,
+                                 SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
         this.smartIdMockDeviceLinkClient = smartIdMockDeviceLinkClient;
+        this.sessionStore = sessionStore;
     }
 
     public String getQrCode(HttpSession session, SessionType sessionType) {
         logger.debug("Getting QR-code content for session id: {}, session type: {}", session.getId(), sessionType);
+        DeviceLinkSessionInfo deviceLinkSessionInfo = (DeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
 
-        String digest = (String) session.getAttribute("rpChallenge");
-        String interactions = (String) session.getAttribute("interactions");
-        DeviceLinkSessionResponse sessionInitResponse = (DeviceLinkSessionResponse) session.getAttribute("sessionInitResponse");
-
-        long elapsedSeconds = Duration.between(sessionInitResponse.receivedAt(), Instant.now()).getSeconds();
+        long elapsedSeconds = Duration.between(deviceLinkSessionInfo.getSessionResponseReceived(), Instant.now()).getSeconds();
         DeviceLinkType deviceLinkType = DeviceLinkType.QR_CODE;
         URI qrLink = smartIdClient.createDynamicContent()
                 .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(sessionInitResponse.deviceLinkBase().toString())
+                .withDeviceLinkBase(deviceLinkSessionInfo.getDeviceLinkBase())
                 .withDeviceLinkType(deviceLinkType)
                 .withSessionType(sessionType)
-                .withSessionToken(sessionInitResponse.sessionToken())
+                .withSessionToken(deviceLinkSessionInfo.getSessionToken())
                 .withLang("eng")
                 .withElapsedSeconds(elapsedSeconds)
-                .withInteractions(interactions)
-                .withDigest(digest)
-                .buildDeviceLink(sessionInitResponse.sessionSecret());
-
+                .withInteractions(deviceLinkSessionInfo.getInteractions())
+                .withDigest(deviceLinkSessionInfo.getDigest())
+                .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
 
         if (useMockService) {
             DeviceLinkMockRequest request = new DeviceLinkMockRequest(
@@ -93,21 +93,18 @@ public class DynamicContentService {
 
     public String getDeviceLink(HttpSession session, SessionType sessionType) {
         logger.debug("Getting device link for session id: {}, session type: {}", session.getId(), sessionType);
-        String digest = (String) session.getAttribute("rpChallenge");
-        String interactions = (String) session.getAttribute("interactions");
-        DeviceLinkSessionResponse sessionInitResponse = (DeviceLinkSessionResponse) session.getAttribute("sessionInitResponse");
-
+        DeviceLinkSessionInfo deviceLinkSessionInfo = (DeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
         URI deviceLink = smartIdClient.createDynamicContent()
                 .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(sessionInitResponse.deviceLinkBase().toString())
+                .withDeviceLinkBase(deviceLinkSessionInfo.getDeviceLinkBase())
                 .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
                 .withSessionType(sessionType)
-                .withSessionToken(sessionInitResponse.sessionToken())
+                .withSessionToken(deviceLinkSessionInfo.getSessionToken())
                 .withLang("eng")
-                .withInitialCallbackUrl("https://localhost:8080/callback")
-                .withInteractions(interactions)
-                .withDigest(digest)
-                .buildDeviceLink(sessionInitResponse.sessionSecret());
+                .withInitialCallbackUrl("https://localhost:8080/callback") // TODO - 28.09.25: replace with deviceLinkSessionInfo.getInitialCallbackUrl()
+                .withInteractions(deviceLinkSessionInfo.getInteractions())
+                .withDigest(deviceLinkSessionInfo.getDigest())
+                .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
         return deviceLink.toString();
     }
 }

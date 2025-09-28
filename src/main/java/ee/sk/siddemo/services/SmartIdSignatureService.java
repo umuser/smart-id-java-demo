@@ -28,6 +28,7 @@ import org.digidoc4j.DataToSign;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.SignatureSessionInfo;
 import ee.sk.siddemo.model.SigningResult;
 import ee.sk.smartid.SignatureResponse;
 import ee.sk.smartid.SignatureValueValidator;
@@ -37,17 +38,18 @@ import jakarta.servlet.http.HttpSession;
 @Service
 public class SmartIdSignatureService {
 
-    private final FileService fileService;
+    private final SessionStore sessionStore;
 
-    public SmartIdSignatureService(FileService fileService) {
-        this.fileService = fileService;
+    public SmartIdSignatureService(SessionStore sessionStore) {
+        this.sessionStore = sessionStore;
     }
 
     public SigningResult handleSignatureResult(HttpSession session) {
-        var signatureResponse = (SignatureResponse) session.getAttribute("signatureResponse");
-        var dataToSign = (DataToSign) session.getAttribute("dataToSign");
-        if (signatureResponse == null) {
-            throw new SidOperationException("No signature response found in session");
+        SignatureSessionInfo sessionInfo = (SignatureSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+        SignatureResponse signatureResponse = sessionInfo.getSignatureResponse();
+        DataToSign dataToSign = sessionInfo.getDataToSign();
+        if (signatureResponse == null || dataToSign == null) {
+            throw new SidOperationException("Required session data is missing");
         }
         SignatureValueValidator validator = new SignatureValueValidatorImpl();
         validator.validate(

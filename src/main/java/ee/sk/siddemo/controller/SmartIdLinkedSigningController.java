@@ -95,12 +95,12 @@ public class SmartIdLinkedSigningController {
 
     @GetMapping(value = "/linked/cert-choice/qr-code")
     public ResponseEntity<String> getAuthenticationQrCode(HttpSession session) {
-        return ResponseEntity.ok(dynamicContentService.getQrCode(session, SessionType.SIGNATURE));
+        return ResponseEntity.ok(dynamicContentService.getQrCode(session, SessionType.CERTIFICATE_CHOICE));
     }
 
     @GetMapping(value = "/linked/cert-choice/url")
     public ResponseEntity<String> getAuthenticationDeviceLink(HttpSession session) {
-        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.SIGNATURE));
+        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.CERTIFICATE_CHOICE));
     }
 
     @GetMapping(value = "/linked/continue-signing")

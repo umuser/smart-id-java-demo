@@ -1,4 +1,4 @@
-List of 152 third-party dependencies (auto-generated on 2025-07-07 with License Maven Plugin):
+List of 153 third-party dependencies (auto-generated on 2025-09-28 with License Maven Plugin):
 
 *  (Eclipse Public License - v 1.0) (GNU Lesser General Public License) Logback Classic Module (ch.qos.logback:logback-classic:1.5.8 - http://logback.qos.ch/logback-classic)
 *  (Eclipse Public License - v 1.0) (GNU Lesser General Public License) Logback Core Module (ch.qos.logback:logback-core:1.5.8 - http://logback.qos.ch/logback-core)
@@ -34,6 +34,7 @@ List of 152 third-party dependencies (auto-generated on 2025-07-07 with License 
 *  (Eclipse Public License 1.0) JUnit (junit:junit:4.12 - http://junit.org)
 *  (Apache License, Version 2.0) Byte Buddy (without dependencies) (net.bytebuddy:byte-buddy:1.14.19 - https://bytebuddy.net/byte-buddy)
 *  (Apache License, Version 2.0) Byte Buddy agent (net.bytebuddy:byte-buddy-agent:1.14.19 - https://bytebuddy.net/byte-buddy-agent)
+*  (Apache License, Version 2.0) ExpiringMap (net.jodah:expiringmap:0.5.11 - http://github.com/jhalterman/expiringmap/)
 *  (The Apache Software License, Version 2.0) ASM based accessors helper used by json-smart (net.minidev:accessors-smart:2.5.1 - https://urielch.github.io/)
 *  (The Apache Software License, Version 2.0) JSON Small and Fast Parser (net.minidev:json-smart:2.5.1 - https://urielch.github.io/)
 *  (Apache License, Version 2.0) Apache Commons Collections (org.apache.commons:commons-collections4:4.4 - https://commons.apache.org/proper/commons-collections/)
