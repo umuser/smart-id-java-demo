@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+import ee.sk.siddemo.services.SessionStore;
 import ee.sk.siddemo.services.SmartIdSessionsStatusService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -36,9 +37,12 @@ import jakarta.servlet.http.HttpSession;
 public class SmartIdSessionController {
 
     private final SmartIdSessionsStatusService smartIdSessionsStatusService;
+    private final SessionStore sessionStore;
 
-    public SmartIdSessionController(SmartIdSessionsStatusService smartIdSessionsStatusService) {
+    public SmartIdSessionController(SmartIdSessionsStatusService smartIdSessionsStatusService,
+                                    SessionStore sessionStore) {
         this.smartIdSessionsStatusService = smartIdSessionsStatusService;
+        this.sessionStore = sessionStore;
     }
 
     @GetMapping(value = "/cancel-session")
@@ -61,6 +65,7 @@ public class SmartIdSessionController {
         HttpSession session = request.getSession();
         if (session != null) {
             smartIdSessionsStatusService.cancelPolling(session.getId());
+            sessionStore.remove(session.getId());
             session.invalidate();
         }
         // Create a new session
