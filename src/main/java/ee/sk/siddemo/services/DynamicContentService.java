@@ -28,8 +28,11 @@ import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import ee.sk.siddemo.client.SmartIdMockDeviceLinkClient;
+import ee.sk.siddemo.model.DeviceLinkMockRequest;
 import ee.sk.smartid.DeviceLinkType;
 import ee.sk.smartid.QrCodeGenerator;
 import ee.sk.smartid.SessionType;
@@ -42,10 +45,15 @@ public class DynamicContentService {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicContentService.class);
 
-    public final SmartIdClient smartIdClient;
+    private final SmartIdClient smartIdClient;
+    private final SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient;
 
-    public DynamicContentService(SmartIdClient smartIdClient) {
+    @Value("${sid.useMockService:false}")
+    private boolean useMockService; // TODO - 28.09.25: make it interactive in frontend as a choice, then it also should provide input for document number
+
+    public DynamicContentService(SmartIdClient smartIdClient, SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient) {
         this.smartIdClient = smartIdClient;
+        this.smartIdMockDeviceLinkClient = smartIdMockDeviceLinkClient;
     }
 
     public String getQrCode(HttpSession session, SessionType sessionType) {
@@ -56,10 +64,11 @@ public class DynamicContentService {
         DeviceLinkSessionResponse sessionInitResponse = (DeviceLinkSessionResponse) session.getAttribute("sessionInitResponse");
 
         long elapsedSeconds = Duration.between(sessionInitResponse.receivedAt(), Instant.now()).getSeconds();
+        DeviceLinkType deviceLinkType = DeviceLinkType.QR_CODE;
         URI qrLink = smartIdClient.createDynamicContent()
                 .withSchemeName("smart-id-demo")
                 .withDeviceLinkBase(sessionInitResponse.deviceLinkBase().toString())
-                .withDeviceLinkType(DeviceLinkType.QR_CODE)
+                .withDeviceLinkType(deviceLinkType)
                 .withSessionType(sessionType)
                 .withSessionToken(sessionInitResponse.sessionToken())
                 .withLang("eng")
@@ -68,6 +77,17 @@ public class DynamicContentService {
                 .withDigest(digest)
                 .buildDeviceLink(sessionInitResponse.sessionSecret());
 
+
+        if (useMockService) {
+            DeviceLinkMockRequest request = new DeviceLinkMockRequest(
+                    "PNOEE-40404040009-MOCK-Q", // document-nr to test with
+                    qrLink.toString(),
+                    DeviceLinkType.QR_CODE.getValue(),
+                    null,
+                    null
+            );
+            smartIdMockDeviceLinkClient.mock(request);
+        }
         return QrCodeGenerator.generateDataUri(qrLink.toString());
     }
 
