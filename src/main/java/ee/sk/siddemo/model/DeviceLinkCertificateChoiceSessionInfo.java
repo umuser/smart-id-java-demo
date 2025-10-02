@@ -10,12 +10,12 @@ package ee.sk.siddemo.model;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
@@ -26,20 +26,24 @@ import java.time.Instant;
 
 import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateLevel;
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 
 public class DeviceLinkCertificateChoiceSessionInfo implements DeviceLinkSessionInfo {
 
     private final DeviceLinkSessionResponse sessionResponse;
     private final CertificateLevel certificateLevel;
+    private final CallbackUrl callbackUrl;
 
     private CertificateChoiceResponse certificateChoiceResponse;
 
 
     public DeviceLinkCertificateChoiceSessionInfo(DeviceLinkSessionResponse response,
-                                                  CertificateLevel certificateLevel) {
+                                                  CertificateLevel certificateLevel,
+                                                  CallbackUrl callbackUrl) {
         this.sessionResponse = response;
         this.certificateLevel = certificateLevel;
+        this.callbackUrl = callbackUrl;
     }
 
     public CertificateLevel getCertificateLevel() {
@@ -74,6 +78,26 @@ public class DeviceLinkCertificateChoiceSessionInfo implements DeviceLinkSession
     @Override
     public String getSessionSecret() {
         return sessionResponse.sessionSecret();
+    }
+
+    @Override
+    public String getInitialCallbackUrl() {
+        return callbackUrl.initialCallbackUri().toString();
+    }
+
+    @Override
+    public String getUrlToken() {
+        return callbackUrl.urlToken();
+    }
+
+    @Override
+    public void setUserChallengeVerifier(String userChallengeVerifier) {
+        // Not used
+    }
+
+    @Override
+    public String getUserChallengeVerifier() {
+        return "";
     }
 
     public CertificateChoiceResponse getCertificateChoiceResponse() {

@@ -1,9 +1,3 @@
-
-> [!CAUTION]
-> v3.0 of Smart-ID API is temporary and will change in near future
-> 
-> v3.0 endpoints in Smart-ID API Demo will be supported until May 2025
-
 # Smart-ID Java Demo
 
 Sample application to demonstrate how to use [smart-id-java-client](https://github.com/SK-EID/smart-id-java-client) library and implement:
@@ -22,6 +16,18 @@ Option 2. run main method of `SmartIdJavaDemoApplication`
 Start the application, open [http://localhost:8081/](http://localhost:8081/)
 and authenticate or sign a document using 
 [test persons](https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters).
+
+## How to test with same device (Web2App and App2App) flows locally
+
+You need to expose your localhost:8081 to internet using some tunneling software. Tested with [ngrok](https://ngrok.com/).
+Check out [ngrok documentation](https://ngrok.com/docs/getting-started/) for installation guide.
+
+Then run command:
+```sh
+    ngrok http 8081
+```
+It will give you a public URL (like https://randomstring.ngrok.io) that you can use to access your local application from internet.
+Update application yaml file `sid.callbackUrl` property to point to callback endpoint with public URL.
 
 ### How to run tests with a real phone
 

@@ -49,9 +49,6 @@ public class DynamicContentService {
     private final SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient;
     private final SessionStore sessionStore;
 
-    @Value("${sid.useMockService:false}")
-    private boolean useMockService; // TODO - 28.09.25: make it interactive in frontend as a choice, then it also should provide input for document number
-
     public DynamicContentService(SmartIdClient smartIdClient,
                                  SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient,
                                  SessionStore sessionStore) {
@@ -77,17 +74,6 @@ public class DynamicContentService {
                 .withInteractions(deviceLinkSessionInfo.getInteractions())
                 .withDigest(deviceLinkSessionInfo.getDigest())
                 .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
-
-        if (useMockService) {
-            DeviceLinkMockRequest request = new DeviceLinkMockRequest(
-                    "PNOEE-40404040009-MOCK-Q", // document-nr to test with
-                    qrLink.toString(),
-                    DeviceLinkType.QR_CODE.getValue(),
-                    null,
-                    null
-            );
-            smartIdMockDeviceLinkClient.mock(request);
-        }
         return QrCodeGenerator.generateDataUri(qrLink.toString());
     }
 
@@ -101,7 +87,7 @@ public class DynamicContentService {
                 .withSessionType(sessionType)
                 .withSessionToken(deviceLinkSessionInfo.getSessionToken())
                 .withLang("eng")
-                .withInitialCallbackUrl("https://localhost:8080/callback") // TODO - 28.09.25: replace with deviceLinkSessionInfo.getInitialCallbackUrl()
+                .withInitialCallbackUrl(deviceLinkSessionInfo.getInitialCallbackUrl())
                 .withInteractions(deviceLinkSessionInfo.getInteractions())
                 .withDigest(deviceLinkSessionInfo.getDigest())
                 .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());

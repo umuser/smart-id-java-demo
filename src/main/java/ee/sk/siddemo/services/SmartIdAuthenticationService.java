@@ -55,7 +55,7 @@ public class SmartIdAuthenticationService {
         if (deviceLinkSessionInfo != null) {
             // validate and map authentication response to authentication identity
             authenticationIdentity = deviceLinkAuthenticationResponseValidator.validate(deviceLinkSessionInfo.getSessionStatus(),
-                    deviceLinkSessionInfo.getRequest(), "smart-id-demo");
+                    deviceLinkSessionInfo.getRequest(), deviceLinkSessionInfo.getUserChallengeVerifier(), "smart-id-demo", null);
         }
         NotificationAuthenticationSessionInfo notificationAuthenticationSessionInfo = (NotificationAuthenticationSessionInfo) sessionStore.get(session.getId(), "notificationAuthenticationSessionInfo");
         if (notificationAuthenticationSessionInfo != null) {

@@ -22,8 +22,10 @@ package ee.sk.siddemo.model;
  * #L%
  */
 
+import java.net.URI;
 import java.time.Instant;
 
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkAuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
@@ -32,13 +34,18 @@ public class DeviceLinkAuthenticationDeviceLinkSessionInfo implements DeviceLink
 
     private final DeviceLinkSessionResponse sessionResponse;
     private final DeviceLinkAuthenticationSessionRequest sessionRequest;
+    private final CallbackUrl callbackUrl;
+
 
     private SessionStatus sessionStatus;
+    private String userChallengeVerifier;
 
     public DeviceLinkAuthenticationDeviceLinkSessionInfo(DeviceLinkSessionResponse sessionResponse,
-                                                         DeviceLinkAuthenticationSessionRequest sessionRequest) {
+                                                         DeviceLinkAuthenticationSessionRequest sessionRequest,
+                                                         CallbackUrl callbackUrl) {
         this.sessionResponse = sessionResponse;
         this.sessionRequest = sessionRequest;
+        this.callbackUrl = callbackUrl;
     }
 
     public String getSessionId() {
@@ -87,4 +94,23 @@ public class DeviceLinkAuthenticationDeviceLinkSessionInfo implements DeviceLink
         this.sessionStatus = sessionStatus;
     }
 
+    @Override
+    public String getUrlToken() {
+        return callbackUrl.urlToken();
+    }
+
+    @Override
+    public String getInitialCallbackUrl() {
+        return callbackUrl.initialCallbackUri().toString();
+    }
+
+    @Override
+    public String getUserChallengeVerifier() {
+        return userChallengeVerifier;
+    }
+
+    @Override
+    public void setUserChallengeVerifier(String userChallengeVerifier) {
+        this.userChallengeVerifier = userChallengeVerifier;
+    }
 }

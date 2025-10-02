@@ -22,27 +22,21 @@ package ee.sk.siddemo.model;
  * #L%
  */
 
-import java.time.Instant;
+import java.util.Map;
 
-public interface DeviceLinkSessionInfo {
+/**
+ * Callback payload received
+ *
+ * @param query query parameters in the callback
+ * @param ts timestamp of the callback
+ */
+public record CallbackPayload(Map<String, String> query, String ts) {
 
-    Instant getSessionResponseReceived();
-
-    String getDeviceLinkBase();
-
-    String getSessionToken();
-
-    String getInteractions();
-
-    String getDigest();
-
-    String getSessionSecret();
-
-    String getInitialCallbackUrl();
-
-    String getUrlToken();
-
-    void setUserChallengeVerifier(String userChallengeVerifier);
-
-    String getUserChallengeVerifier();
+    public Map<String, String> asParams() {
+        var m = new java.util.HashMap<String, String>();
+        if (query != null) {
+            m.putAll(query);
+        }
+        return m;
+    }
 }

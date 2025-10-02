@@ -40,6 +40,16 @@ public class SmartIdMockDeviceLinkClient {
         this.smartIdMockRestClient = smartIdMockRestClient;
     }
 
+    public void mockForDeviceLink(DeviceLinkMockRequest request, String path){
+        logger.info("Mocking for {}, for path {}", request, path);
+        smartIdMockRestClient.post()
+                .uri(path)
+                .header("Content-Type", "application/json")
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
     public void mock(DeviceLinkMockRequest request) {
         logger.info("Mocking for {}", request);
         smartIdMockRestClient.post()

@@ -10,12 +10,12 @@ package ee.sk.siddemo.model;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
@@ -29,6 +29,7 @@ import org.digidoc4j.DataToSign;
 
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignatureResponse;
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SignatureSessionRequest;
 
@@ -39,6 +40,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     private final CertificateLevel requestedCertificateLevel;
     private final Container container;
     private final DataToSign dataToSign;
+    private final CallbackUrl callbackUrl;
 
     private SignatureResponse signatureResponse;
 
@@ -46,12 +48,14 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
                                            SignatureSessionRequest sessionRequest,
                                            CertificateLevel requestedCertificateLevel,
                                            Container container,
-                                           DataToSign dataToSign) {
+                                           DataToSign dataToSign,
+                                           CallbackUrl callbackUrl) {
         this.sessionResponse = sessionResponse;
         this.sessionRequest = sessionRequest;
         this.requestedCertificateLevel = requestedCertificateLevel;
         this.container = container;
         this.dataToSign = dataToSign;
+        this.callbackUrl = callbackUrl;
     }
 
     @Override
@@ -82,6 +86,26 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     @Override
     public String getSessionSecret() {
         return sessionResponse.sessionSecret();
+    }
+
+    @Override
+    public String getInitialCallbackUrl() {
+        return callbackUrl.initialCallbackUri().toString();
+    }
+
+    @Override
+    public String getUrlToken() {
+        return callbackUrl.urlToken();
+    }
+
+    @Override
+    public void setUserChallengeVerifier(String userChallengeVerifier) {
+        // Not used
+    }
+
+    @Override
+    public String getUserChallengeVerifier() {
+        return "";
     }
 
     public CertificateLevel getRequestedCertificateLevel() {
@@ -117,6 +141,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
         private CertificateLevel requestedCertificateLevel;
         private Container container;
         private DataToSign dataToSign;
+        private CallbackUrl callbackUrl;
 
         public Builder withSessionResponse(DeviceLinkSessionResponse sessionResponse) {
             this.sessionResponse = sessionResponse;
@@ -143,13 +168,18 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
             return this;
         }
 
+        public Builder withCallbackUrl(CallbackUrl callbackUrl) {
+            this.callbackUrl = callbackUrl;
+            return this;
+        }
+
         public DeviceLinkSignatureSessionInfo build() {
             return new DeviceLinkSignatureSessionInfo(sessionResponse,
                     sessionRequest,
                     requestedCertificateLevel,
                     container,
-                    dataToSign);
+                    dataToSign,
+                    callbackUrl);
         }
-
     }
 }

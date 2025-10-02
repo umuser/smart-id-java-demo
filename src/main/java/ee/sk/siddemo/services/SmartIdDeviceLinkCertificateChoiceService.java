@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
@@ -36,10 +37,12 @@ import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -54,6 +57,9 @@ public class SmartIdDeviceLinkCertificateChoiceService {
     private final CertificateChoiceResponseValidator certificateChoiceResponseValidator;
     private final SessionStore sessionStore;
 
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
+
     public SmartIdDeviceLinkCertificateChoiceService(SmartIdClient smartIdClient,
                                                      SmartIdSessionsStatusService smartIdSessionsStatusService,
                                                      CertificateChoiceResponseValidator certificateChoiceResponseValidator,
@@ -66,12 +72,14 @@ public class SmartIdDeviceLinkCertificateChoiceService {
 
     public void startCertificateChoice(HttpSession session) {
         CertificateLevel requesteCertificateLevel = CertificateLevel.ADVANCED;
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(requesteCertificateLevel)
                 .withShareMdClientIpAddress(true)
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString())
                 .initCertificateChoice();
 
-        var sessionInfo = new DeviceLinkCertificateChoiceSessionInfo(response, requesteCertificateLevel);
+        var sessionInfo = new DeviceLinkCertificateChoiceSessionInfo(response, requesteCertificateLevel, callbackUrl);
         sessionStore.put(session.getId(), "deviceLinkSessionInfo", sessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }

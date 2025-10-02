@@ -37,6 +37,7 @@ import org.digidoc4j.SignatureBuilder;
 import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +54,7 @@ import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SignatureResponse;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -61,6 +63,7 @@ import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import ee.sk.smartid.rest.dao.SignatureSessionRequest;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -68,16 +71,18 @@ public class SmartIdDeviceLinkSignatureService {
 
     private static final Logger logger = LoggerFactory.getLogger(SmartIdDeviceLinkSignatureService.class);
 
-    private final SmartIdNotificationBasedCertificateChoiceService notificationCertificateChoiceService;
     private final SmartIdSessionsStatusService sessionsStatusService;
     private final SmartIdClient smartIdClient;
     private final SignatureResponseValidator signatureResponseValidator;
     private final SessionStore sessionStore;
 
-    public SmartIdDeviceLinkSignatureService(SmartIdNotificationBasedCertificateChoiceService notificationCertificateChoiceService,
-                                             SmartIdSessionsStatusService sessionsStatusService,
-                                             SmartIdClient smartIdClient, SignatureResponseValidator signatureResponseValidator, SessionStore sessionStore) {
-        this.notificationCertificateChoiceService = notificationCertificateChoiceService;
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
+
+    public SmartIdDeviceLinkSignatureService(SmartIdSessionsStatusService sessionsStatusService,
+                                             SmartIdClient smartIdClient,
+                                             SignatureResponseValidator signatureResponseValidator,
+                                             SessionStore sessionStore) {
         this.sessionsStatusService = sessionsStatusService;
         this.smartIdClient = smartIdClient;
         this.signatureResponseValidator = signatureResponseValidator;
@@ -94,6 +99,8 @@ public class SmartIdDeviceLinkSignatureService {
 
         var sessionInfoBuilder = DeviceLinkSignatureSessionInfo.builder().withRequestedCertificateLevel(signatureCertificateLevel);
 
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
+        sessionInfoBuilder.withCallbackUrl(callbackUrl);
         SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificateByDocumentNumberResult.certificate(), sessionInfoBuilder);
         var deviceLinkSignatureSessionRequestBuilder = smartIdClient.createDeviceLinkSignature()
                 .withCertificateLevel(signatureCertificateLevel)
@@ -101,7 +108,7 @@ public class SmartIdDeviceLinkSignatureService {
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign the document!")))
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withInitialCallbackUrl("https://localhost:8080/callback");
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString());
         DeviceLinkSessionResponse sessionResponse = deviceLinkSignatureSessionRequestBuilder.initSignatureSession();
         SignatureSessionRequest sessionRequest = deviceLinkSignatureSessionRequestBuilder.getSignatureSessionRequest();
 
@@ -119,6 +126,8 @@ public class SmartIdDeviceLinkSignatureService {
                 .withCertificateLevel(signatureCertificateLevel)
                 .getCertificateByDocumentNumber();
         var sessionInfoBuilder = DeviceLinkSignatureSessionInfo.builder().withRequestedCertificateLevel(signatureCertificateLevel);
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
+        sessionInfoBuilder.withCallbackUrl(callbackUrl);
         SignableData signableData = toSignableData(userRequest.getFile(), certificateByDocumentNumberResult.certificate(), sessionInfoBuilder);
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
         DeviceLinkSignatureSessionRequestBuilder builder = smartIdClient.createDeviceLinkSignature()
@@ -127,7 +136,7 @@ public class SmartIdDeviceLinkSignatureService {
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign the document!")))
-                .withInitialCallbackUrl("https://localhost:8080/callback");
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString());
         DeviceLinkSessionResponse sessionResponse = builder.initSignatureSession();
         SignatureSessionRequest sessionRequest = builder.getSignatureSessionRequest();
 

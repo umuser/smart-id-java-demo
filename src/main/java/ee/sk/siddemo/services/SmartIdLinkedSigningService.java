@@ -38,6 +38,7 @@ import org.digidoc4j.SignatureBuilder;
 import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,6 +52,7 @@ import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -58,6 +60,7 @@ import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.LinkedSignatureSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -73,6 +76,9 @@ public class SmartIdLinkedSigningService {
     private final SignatureResponseValidator signatureResponseValidator;
     private final SessionStore sessionStore;
 
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
+
     public SmartIdLinkedSigningService(SmartIdClient smartIdClient,
                                        SmartIdSessionsStatusService smartIdSessionsStatusService,
                                        CertificateChoiceResponseValidator certificateChoiceResponseValidator,
@@ -86,11 +92,13 @@ public class SmartIdLinkedSigningService {
 
     public void startSigning(HttpSession session, @Valid LinkedSigningRequest linkedSigningRequest) {
         CertificateLevel certificateLevel = CertificateLevel.ADVANCED;
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(certificateLevel)
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString())
                 .initCertificateChoice();
 
-        var linkedSigningSessionInfo = new LinkedSigningSessionInfo(response, certificateLevel, getUploadedDataFile(linkedSigningRequest.getFile()));
+        var linkedSigningSessionInfo = new LinkedSigningSessionInfo(response, certificateLevel, getUploadedDataFile(linkedSigningRequest.getFile()), callbackUrl);
         sessionStore.put(session.getId(), "deviceLinkSessionInfo", linkedSigningSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }

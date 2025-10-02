@@ -1,4 +1,4 @@
-package ee.sk.siddemo.model;
+package ee.sk.siddemo.controller;
 
 /*-
  * #%L
@@ -22,27 +22,14 @@ package ee.sk.siddemo.model;
  * #L%
  */
 
-import java.time.Instant;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 
-public interface DeviceLinkSessionInfo {
+@Controller
+public class SmartIdCallbackPageController {
 
-    Instant getSessionResponseReceived();
-
-    String getDeviceLinkBase();
-
-    String getSessionToken();
-
-    String getInteractions();
-
-    String getDigest();
-
-    String getSessionSecret();
-
-    String getInitialCallbackUrl();
-
-    String getUrlToken();
-
-    void setUserChallengeVerifier(String userChallengeVerifier);
-
-    String getUserChallengeVerifier();
+    @GetMapping("/callback")
+    public String page () {
+        return "/device-link/callback";
+    }
 }
