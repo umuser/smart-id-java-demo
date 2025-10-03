@@ -33,8 +33,7 @@ sid:
     trust-anchor-certs:
       filename: /sid_trust_anchor_certificates.jks
       password: changeit
-  useMockService: false
-  callbackUrl: https://b5136c14e83d.ngrok-free.app/callback # ngrok tunnel can be used for local testing
+  callbackUrl: https://08d8686aa972.ngrok-free.app/callback # ngrok tunnel can be used for same-device testing
 
 app:
   signed-files-directory: target/signed-files

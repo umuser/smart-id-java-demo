@@ -45,4 +45,7 @@ public interface DeviceLinkSessionInfo {
     void setUserChallengeVerifier(String userChallengeVerifier);
 
     String getUserChallengeVerifier();
+
+    UserActionMock getMockUserAction();
+
 }

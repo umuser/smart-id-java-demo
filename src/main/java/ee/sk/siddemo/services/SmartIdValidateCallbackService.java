@@ -65,14 +65,6 @@ public class SmartIdValidateCallbackService {
         } catch (SmartIdException ex) {
             throw new SidOperationException("Invalid callback request", ex);
         }
-//        byte[] decodedSessionSecret = Base64.getDecoder().decode(sessionInfo.getSessionSecret());
-//        byte[] sessionSecretDigest = DigestCalculator.calculateDigest(decodedSessionSecret, HashAlgorithm.SHA_256);
-//        String calculatedSessionSecret = Base64.getUrlEncoder().withoutPadding().encodeToString(sessionSecretDigest);
-
-//        if (!urlSessionSecret.equals(calculatedSessionSecret)) {
-//            logger.error("Invalid callback request, session secret digest does not match. urlSessionSecret: {}, calculatedSessionSecret: {}", urlSessionSecret, calculatedSessionSecret);
-//            throw new SidOperationException("Invalid callback request");
-//        }
         String userChallengeVerifier = body.asParams().get("userChallengeVerifier");
         if (userChallengeVerifier != null) {
             sessionInfo.setUserChallengeVerifier(userChallengeVerifier);

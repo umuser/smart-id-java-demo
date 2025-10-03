@@ -31,6 +31,7 @@ public class UserDocumentNumberRequest {
     @NotNull
     private String documentNumber;
     private MultipartFile file;
+    private UserActionMock userActionMock = UserActionMock.NONE;
 
     public String getDocumentNumber() {
         return documentNumber;
@@ -46,5 +47,13 @@ public class UserDocumentNumberRequest {
 
     public void setFile(MultipartFile file) {
         this.file = file;
+    }
+
+    public UserActionMock getUserActionMock() {
+        return userActionMock;
+    }
+
+    public void setUserActionMock(UserActionMock userActionMock) {
+        this.userActionMock = userActionMock;
     }
 }

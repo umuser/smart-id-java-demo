@@ -36,7 +36,7 @@ public class DeviceLinkCertificateChoiceSessionInfo implements DeviceLinkSession
     private final CallbackUrl callbackUrl;
 
     private CertificateChoiceResponse certificateChoiceResponse;
-
+    private UserActionMock userActionMock = UserActionMock.NONE;
 
     public DeviceLinkCertificateChoiceSessionInfo(DeviceLinkSessionResponse response,
                                                   CertificateLevel certificateLevel,
@@ -98,6 +98,11 @@ public class DeviceLinkCertificateChoiceSessionInfo implements DeviceLinkSession
     @Override
     public String getUserChallengeVerifier() {
         return "";
+    }
+
+    @Override
+    public UserActionMock getMockUserAction() {
+        return userActionMock;
     }
 
     public CertificateChoiceResponse getCertificateChoiceResponse() {

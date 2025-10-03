@@ -37,11 +37,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.AnonymousRequest;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdDeviceLinkAuthenticationService;
 import ee.sk.smartid.SessionType;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -60,9 +62,11 @@ public class SmartIdDeviceLinkAuthenticationController {
         this.dynamicContentService = dynamicContentService;
     }
 
-    @GetMapping(value = "/device-link/start-authentication")
-    public ModelAndView startAuthentication(ModelMap model, HttpSession session) {
-        smartIdDeviceLinkAuthenticationService.startAuthentication(session);
+    @PostMapping(value = "/device-link/start-authentication")
+    public ModelAndView startAuthentication(@ModelAttribute("anonymousRequest") @Valid AnonymousRequest anonymousRequest,
+                                            ModelMap model,
+                                            HttpSession session) {
+        smartIdDeviceLinkAuthenticationService.startAuthentication(session, anonymousRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("device-link/authentication", model);
     }
@@ -116,7 +120,7 @@ public class SmartIdDeviceLinkAuthenticationController {
     }
 
     @GetMapping(value = "/device-link/authentication/url")
-    public ResponseEntity<String> getAuthenticationDeviceLink(HttpSession session) {
-        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.AUTHENTICATION));
+    public ResponseEntity<String> getAuthenticationDeviceLink(HttpSession session, HttpServletRequest request) {
+        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.AUTHENTICATION, request));
     }
 }

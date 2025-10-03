@@ -30,7 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import ee.sk.siddemo.model.AnonymousRequest;
 import ee.sk.siddemo.model.DeviceLinkAuthenticationDeviceLinkSessionInfo;
+import ee.sk.siddemo.model.UserActionMock;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.AuthenticationCertificateLevel;
@@ -70,7 +72,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         this.sessionStore = sessionStore;
     }
 
-    public void startAuthentication(HttpSession session) {
+    public void startAuthentication(HttpSession session, AnonymousRequest anonymousRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
         var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
@@ -85,7 +87,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl);
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, anonymousRequest.getUserActionMock());
         sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
@@ -107,7 +109,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl);
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, UserActionMock.NONE);
         sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
@@ -128,7 +130,7 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl);
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, UserActionMock.NONE);
         sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
@@ -155,6 +157,8 @@ public class SmartIdDeviceLinkAuthenticationService {
     }
 
     private static boolean isCallbackCompleted(DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo) {
-        return !sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR") && sessionInfo.getUserChallengeVerifier() != null;
+        return sessionInfo.getSessionStatus().getSignature() != null
+                && !sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")
+                && sessionInfo.getUserChallengeVerifier() != null;
     }
 }

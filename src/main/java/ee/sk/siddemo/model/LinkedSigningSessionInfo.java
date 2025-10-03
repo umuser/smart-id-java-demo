@@ -45,7 +45,7 @@ public class LinkedSigningSessionInfo implements DeviceLinkSessionInfo, Signatur
     private Container container;
     private DataToSign dataToSign;
     private SignatureResponse signatureResponse;
-
+    private UserActionMock userActionMock = UserActionMock.NONE;
 
     public LinkedSigningSessionInfo(DeviceLinkSessionResponse certificateSessionResponse,
                                     CertificateLevel certificateLevel,
@@ -105,6 +105,11 @@ public class LinkedSigningSessionInfo implements DeviceLinkSessionInfo, Signatur
     @Override
     public String getUserChallengeVerifier() {
         return "";
+    }
+
+    @Override
+    public UserActionMock getMockUserAction() {
+        return userActionMock;
     }
 
     public String getCertificateChoiceSessionId() {

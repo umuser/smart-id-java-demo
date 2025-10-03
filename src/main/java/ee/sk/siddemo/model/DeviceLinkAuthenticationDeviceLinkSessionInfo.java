@@ -22,7 +22,6 @@ package ee.sk.siddemo.model;
  * #L%
  */
 
-import java.net.URI;
 import java.time.Instant;
 
 import ee.sk.smartid.common.CallbackUrl;
@@ -35,17 +34,19 @@ public class DeviceLinkAuthenticationDeviceLinkSessionInfo implements DeviceLink
     private final DeviceLinkSessionResponse sessionResponse;
     private final DeviceLinkAuthenticationSessionRequest sessionRequest;
     private final CallbackUrl callbackUrl;
-
+    private final UserActionMock userActionMock;
 
     private SessionStatus sessionStatus;
     private String userChallengeVerifier;
 
     public DeviceLinkAuthenticationDeviceLinkSessionInfo(DeviceLinkSessionResponse sessionResponse,
                                                          DeviceLinkAuthenticationSessionRequest sessionRequest,
-                                                         CallbackUrl callbackUrl) {
+                                                         CallbackUrl callbackUrl,
+                                                         UserActionMock userActionMock) {
         this.sessionResponse = sessionResponse;
         this.sessionRequest = sessionRequest;
         this.callbackUrl = callbackUrl;
+        this.userActionMock = userActionMock;
     }
 
     public String getSessionId() {
@@ -107,6 +108,11 @@ public class DeviceLinkAuthenticationDeviceLinkSessionInfo implements DeviceLink
     @Override
     public String getUserChallengeVerifier() {
         return userChallengeVerifier;
+    }
+
+    @Override
+    public UserActionMock getMockUserAction() {
+        return userActionMock;
     }
 
     @Override

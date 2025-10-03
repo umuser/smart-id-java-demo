@@ -22,6 +22,9 @@ package ee.sk.siddemo.client;
  * #L%
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,27 +39,24 @@ public class SmartIdMockDeviceLinkClient {
 
     private final RestClient smartIdMockRestClient;
 
+    private final Map<String, DeviceLinkMockRequest> mocks = new HashMap<>();
+
     public SmartIdMockDeviceLinkClient(RestClient smartIdMockRestClient) {
         this.smartIdMockRestClient = smartIdMockRestClient;
     }
 
-    public void mockForDeviceLink(DeviceLinkMockRequest request, String path){
-        logger.info("Mocking for {}, for path {}", request, path);
-        smartIdMockRestClient.post()
-                .uri(path)
-                .header("Content-Type", "application/json")
-                .body(request)
-                .retrieve()
-                .toBodilessEntity();
-    }
-
-    public void mock(DeviceLinkMockRequest request) {
+    public void mock(String userSessionId, DeviceLinkMockRequest request) {
         logger.info("Mocking for {}", request);
+        if (mocks.get(userSessionId) != null) {
+            // Not sure if every generated QR-code device link should be sent for mocking or only once is enough. It is not clear in documentation.
+            return;
+        }
         smartIdMockRestClient.post()
                 .uri("/device-link")
                 .header("Content-Type", "application/json")
                 .body(request)
                 .retrieve()
                 .toBodilessEntity();
+        mocks.put(userSessionId, request);
     }
 }

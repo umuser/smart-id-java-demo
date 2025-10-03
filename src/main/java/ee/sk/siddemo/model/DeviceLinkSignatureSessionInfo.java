@@ -43,6 +43,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     private final CallbackUrl callbackUrl;
 
     private SignatureResponse signatureResponse;
+    private UserActionMock userActionMock = UserActionMock.NONE;
 
     private DeviceLinkSignatureSessionInfo(DeviceLinkSessionResponse sessionResponse,
                                            SignatureSessionRequest sessionRequest,
@@ -106,6 +107,11 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     @Override
     public String getUserChallengeVerifier() {
         return "";
+    }
+
+    @Override
+    public UserActionMock getMockUserAction() {
+        return userActionMock;
     }
 
     public CertificateLevel getRequestedCertificateLevel() {

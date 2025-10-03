@@ -12,12 +12,15 @@
 <body>
 <div th:insert="~{fragments/header :: header}"></div>
 
-<main>
+<main class="flex-column">
     <div class="d-flex align-items-center">
         <div id="callback-result">
             <div class="spinner-border ml-auto m-3" role="status" aria-hidden="true"></div>
             <strong>Checking callback ...</strong>
         </div>
+    </div>
+    <div class="alert-info text-center">
+
     </div>
 </main>
 
@@ -41,7 +44,13 @@
                     resultArea.innerHTML = '<strong>Callback validation failed!</strong>';
                 }
             })
-            .catch(() => document.body.textContent = 'Something went wrong.');
+            .catch(() => document.body.textContent = 'Something went wrong.')
+            .finally(
+                () => {
+                    const infoArea = document.querySelector('.alert-info');
+                    infoArea.textContent = location.href;
+                }
+            );
     })();
 </script>
 </body>
