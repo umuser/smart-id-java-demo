@@ -90,7 +90,7 @@ public class SmartIdDeviceLinkSignatureService {
     }
 
     public void startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        var signatureCertificateLevel = CertificateLevel.ADVANCED;
+        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
         CertificateByDocumentNumberResult certificateByDocumentNumberResult = smartIdClient
                 .createCertificateByDocumentNumber()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
@@ -118,7 +118,7 @@ public class SmartIdDeviceLinkSignatureService {
     }
 
     public void startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
-        var signatureCertificateLevel = CertificateLevel.ADVANCED;
+        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
         String documentNumber = (String) session.getAttribute("documentNumber");
         CertificateByDocumentNumberResult certificateByDocumentNumberResult = smartIdClient
                 .createCertificateByDocumentNumber()

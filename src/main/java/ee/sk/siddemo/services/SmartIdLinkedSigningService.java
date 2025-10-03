@@ -91,7 +91,7 @@ public class SmartIdLinkedSigningService {
     }
 
     public void startSigning(HttpSession session, @Valid LinkedSigningRequest linkedSigningRequest) {
-        CertificateLevel certificateLevel = CertificateLevel.ADVANCED;
+        CertificateLevel certificateLevel = CertificateLevel.QUALIFIED;
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(certificateLevel)

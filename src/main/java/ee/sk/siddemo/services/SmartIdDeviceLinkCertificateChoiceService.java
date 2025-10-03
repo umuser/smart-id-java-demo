@@ -71,7 +71,7 @@ public class SmartIdDeviceLinkCertificateChoiceService {
     }
 
     public void startCertificateChoice(HttpSession session) {
-        CertificateLevel requesteCertificateLevel = CertificateLevel.ADVANCED;
+        CertificateLevel requesteCertificateLevel = CertificateLevel.QUALIFIED;
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(requesteCertificateLevel)

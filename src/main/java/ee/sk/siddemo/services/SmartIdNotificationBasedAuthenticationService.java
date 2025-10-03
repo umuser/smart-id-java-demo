@@ -67,7 +67,7 @@ public class SmartIdNotificationBasedAuthenticationService {
         RpChallenge rpChallenge = RpChallengeGenerator.generate();
         String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
 
-        var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionRequestBuilder builder = smartIdClient.createNotificationAuthentication()
                 .withSemanticsIdentifier(semanticsIdentifier)
                 .withRpChallenge(rpChallenge.toBase64EncodedValue())
@@ -84,7 +84,7 @@ public class SmartIdNotificationBasedAuthenticationService {
     public String startAuthenticationWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         RpChallenge rpChallenge = RpChallengeGenerator.generate();
         String verificationCode = VerificationCodeCalculator.calculate(rpChallenge.value());
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         NotificationAuthenticationSessionRequestBuilder builder = smartIdClient.createNotificationAuthentication()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withRpChallenge(rpChallenge.toBase64EncodedValue())

@@ -74,7 +74,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
     public void startAuthentication(HttpSession session, AnonymousRequest anonymousRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
@@ -95,7 +95,7 @@ public class SmartIdDeviceLinkAuthenticationService {
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPin(displayText));
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
@@ -116,7 +116,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
     public void startAuthentication(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPin(displayText));
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
