@@ -41,7 +41,7 @@ import ee.sk.smartid.HashAlgorithm;
 import ee.sk.smartid.RpChallengeGenerator;
 import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SmartIdClient;
-import ee.sk.smartid.common.CallbackUrl;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkAuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;

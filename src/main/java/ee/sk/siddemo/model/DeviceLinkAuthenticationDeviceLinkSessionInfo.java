@@ -24,7 +24,7 @@ package ee.sk.siddemo.model;
 
 import java.time.Instant;
 
-import ee.sk.smartid.common.CallbackUrl;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkAuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;

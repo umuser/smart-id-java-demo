@@ -54,7 +54,7 @@ import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SignatureResponse;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
-import ee.sk.smartid.common.CallbackUrl;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;

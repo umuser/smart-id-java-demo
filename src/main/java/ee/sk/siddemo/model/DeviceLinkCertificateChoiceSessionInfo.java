@@ -26,7 +26,7 @@ import java.time.Instant;
 
 import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateLevel;
-import ee.sk.smartid.common.CallbackUrl;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 
 public class DeviceLinkCertificateChoiceSessionInfo implements DeviceLinkSessionInfo {

@@ -29,7 +29,7 @@ import org.digidoc4j.DataToSign;
 
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignatureResponse;
-import ee.sk.smartid.common.CallbackUrl;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SignatureSessionRequest;
 
