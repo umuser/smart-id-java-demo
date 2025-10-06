@@ -22,7 +22,6 @@ package ee.sk.siddemo.controller;
  * #L%
  */
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -42,7 +41,6 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import ee.sk.siddemo.exception.SidOperationException;
-import ee.sk.siddemo.model.DynamicContent;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
@@ -123,12 +121,17 @@ public class SmartIdDeviceLinkSignatureController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
-        // return new dynamic link and QR-code until sessions is marked as completed
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.SIGNATURE);
-        Map<String, String> content = new HashMap<>();
-        content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
-        content.put("qrCode", dynamicContent.getQrCode());
-        return ResponseEntity.ok(content);
+        return ResponseEntity.ok(Map.of("sessionStatus", "RUNNING"));
+    }
+
+    @GetMapping(value = "/device-link/signature/qr-code")
+    public ResponseEntity<String> getAuthenticationQrCode(HttpSession session) {
+        return ResponseEntity.ok(dynamicContentService.getQrCode(session, SessionType.SIGNATURE));
+    }
+
+    @GetMapping(value = "/device-link/signature/url")
+    public ResponseEntity<String> getAuthenticationDeviceLink(HttpSession session) {
+        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.SIGNATURE));
     }
 
     private static boolean isFileMissing(MultipartFile file) {

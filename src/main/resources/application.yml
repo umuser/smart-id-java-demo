@@ -1,12 +1,23 @@
 spring.servlet.multipart:
   max-file-size: 10MB
   max-request-size: 10MB
-server.port: 8081
+server.port: 8082
+
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+        secure: true
+        http-only: true
+  forward-headers-strategy: framework
 
 sid:
   client:
     relyingPartyUuid: ${SID_RELYING_PARTY_UUID}
     relyingPartyName: ${SID_RELYING_PARTY_NAME}
+#    relyingPartyUuid: 00000000-0000-4000-8000-000000000000
+#    relyingPartyName: DEMO
     applicationProviderHost: https://sid.demo.sk.ee/smart-id-rp/v3/
     polling-timeout-in-seconds: 5
     open-socket-timeout-in-seconds: 1
@@ -22,6 +33,7 @@ sid:
     trust-anchor-certs:
       filename: /sid_trust_anchor_certificates.jks
       password: changeit
+  callbackUrl: https://08d8686aa972.ngrok-free.app/callback # ngrok tunnel can be used for same-device testing
 
 app:
   signed-files-directory: target/signed-files

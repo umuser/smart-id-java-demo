@@ -57,7 +57,7 @@
                 </p>
             </div>
             <div class="container text-center">
-                <a class="btn btn-primary" id="dynamic-link"> To Smart-ID app</a>
+                <a class="btn btn-primary" id="device-link"> To Smart-ID app</a>
             </div>
             <div class="container">
                 <h5> Link content</h5>
@@ -75,19 +75,48 @@
 <script th:src="@{/js/bootstrap.js}"></script>
 <script type="text/javascript">
     function loadContent() {
+        checkStatus();
+        loadQrCode();
+        loadDeviceLink();
+    }
+
+    function checkStatus() {
         fetch('/device-link/check-authentication-status')
-            .then(response => response.json())
+            .then(response => {
+                return response.json();
+            })
             .then(data => {
                 if (data.errorMessage !== undefined) {
                     window.location.href = '/session-error?errorMessage=' + data.errorMessage;
                 } else if (data.sessionStatus === 'COMPLETED') {
                     window.location.href = '/authentication-result';
                 } else {
-                    document.getElementById("qr-code").src = data.qrCode;
-                    document.getElementById("dynamic-link").href = data.dynamicLink;
-                    document.getElementById("link-content").innerText = data.dynamicLink;
-                    setTimeout(loadContent, 1000);
+                    setTimeout(checkStatus, 1000);
                 }
+            })
+            .catch(error => console.log('Error:', error));
+    }
+
+    function loadQrCode() {
+        fetch('/device-link/authentication/qr-code')
+            .then(response => {
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById("qr-code").src = data;
+                setTimeout(loadQrCode, 1000) // QR-code has to be refreshed every 60 seconds
+            })
+            .catch(error => console.log('Error:', error));
+    }
+
+    function loadDeviceLink() {
+        fetch('/device-link/authentication/url')
+            .then(response => {
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById("device-link").href = data;
+                document.getElementById("link-content").innerText = data;
             })
             .catch(error => console.log('Error:', error));
     }

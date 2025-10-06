@@ -30,13 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import ee.sk.siddemo.model.DynamicContent;
-import ee.sk.smartid.DeviceLinkBuilder;
+import ee.sk.siddemo.client.SmartIdMockDeviceLinkClient;
+import ee.sk.siddemo.model.DeviceLinkMockRequest;
+import ee.sk.siddemo.model.DeviceLinkSessionInfo;
+import ee.sk.siddemo.model.UserActionMock;
 import ee.sk.smartid.DeviceLinkType;
 import ee.sk.smartid.QrCodeGenerator;
 import ee.sk.smartid.SessionType;
 import ee.sk.smartid.SmartIdClient;
-import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -44,56 +47,96 @@ public class DynamicContentService {
 
     private static final Logger logger = LoggerFactory.getLogger(DynamicContentService.class);
 
-    public final SmartIdClient smartIdClient;
+    private final SmartIdClient smartIdClient;
+    private final SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient;
+    private final SessionStore sessionStore;
 
-    public DynamicContentService(SmartIdClient smartIdClient) {
+    public DynamicContentService(SmartIdClient smartIdClient,
+                                 SmartIdMockDeviceLinkClient smartIdMockDeviceLinkClient,
+                                 SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
+        this.smartIdMockDeviceLinkClient = smartIdMockDeviceLinkClient;
+        this.sessionStore = sessionStore;
     }
 
-    public DynamicContent getDynamicContent(HttpSession session, SessionType sessionType) {
-        String digest = (String) session.getAttribute("rpChallenge");
-        String interactions = (String) session.getAttribute("interactions");
-        DeviceLinkSessionResponse sessionInitResponse = (DeviceLinkSessionResponse) session.getAttribute("sessionInitResponse");
-        return getDynamicContent(sessionType, digest, interactions, sessionInitResponse);
-    }
+    public String getQrCode(HttpSession session, SessionType sessionType) {
+        logger.debug("Getting QR-code content for session id: {}, session type: {}", session.getId(), sessionType);
+        DeviceLinkSessionInfo deviceLinkSessionInfo = (DeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
 
-    public DynamicContent getDynamicContent(SessionType sessionType,
-                                            String digest,
-                                            String interactions,
-                                            DeviceLinkSessionResponse deviceLinkSessionResponse) {
-        long elapsedSeconds = Duration.between(deviceLinkSessionResponse.receivedAt(), Instant.now()).getSeconds();
-        logger.info("Dynamic content elapsed seconds: {}", elapsedSeconds);
-
-        String relyingPartyName = smartIdClient.getRelyingPartyName();
-
-        URI dynamicLink = new DeviceLinkBuilder()
+        long elapsedSeconds = Duration.between(deviceLinkSessionInfo.getSessionResponseReceived(), Instant.now()).getSeconds();
+        DeviceLinkType deviceLinkType = DeviceLinkType.QR_CODE;
+        URI qrLink = smartIdClient.createDynamicContent()
                 .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(deviceLinkSessionResponse.deviceLinkBase().toString())
-                .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
+                .withDeviceLinkBase(deviceLinkSessionInfo.getDeviceLinkBase())
+                .withDeviceLinkType(deviceLinkType)
                 .withSessionType(sessionType)
-                .withSessionToken(deviceLinkSessionResponse.sessionToken())
-                .withLang("eng")
-                .withInitialCallbackUrl("https://localhost:8080/callback")
-                .withRelyingPartyName(relyingPartyName)
-                .withInteractions(interactions)
-                .withDigest(digest)
-                .buildDeviceLink(deviceLinkSessionResponse.sessionSecret());
-
-        URI qrLink = new DeviceLinkBuilder()
-                .withSchemeName("smart-id-demo")
-                .withDeviceLinkBase(deviceLinkSessionResponse.deviceLinkBase().toString())
-                .withDeviceLinkType(DeviceLinkType.QR_CODE)
-                .withSessionType(sessionType)
-                .withSessionToken(deviceLinkSessionResponse.sessionToken())
+                .withSessionToken(deviceLinkSessionInfo.getSessionToken())
                 .withLang("eng")
                 .withElapsedSeconds(elapsedSeconds)
-                .withRelyingPartyName(relyingPartyName)
-                .withInteractions(interactions)
-                .withDigest(digest)
-                .buildDeviceLink(deviceLinkSessionResponse.sessionSecret());
+                .withInteractions(deviceLinkSessionInfo.getInteractions())
+                .withDigest(deviceLinkSessionInfo.getDigest())
+                .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
+        if (deviceLinkSessionInfo.getMockUserAction() == UserActionMock.QR_CODE) {
+            DeviceLinkMockRequest request = new DeviceLinkMockRequest(
+                    "PNOEE-40404040009-MOCK-Q",
+                    qrLink.toString(),
+                    DeviceLinkType.QR_CODE.getValue(),
+                    null,
+                    null);
+            smartIdMockDeviceLinkClient.mock(session.getId(), request);
+        }
+        return QrCodeGenerator.generateDataUri(qrLink.toString());
+    }
 
-        String qrDataUri = QrCodeGenerator.generateDataUri(qrLink.toString());
+    public String getDeviceLink(HttpSession session, SessionType sessionType, HttpServletRequest servletRequest) {
+        var deviceLinkSessionInfo = (DeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+        URI deviceLink = smartIdClient.createDynamicContent()
+                .withSchemeName("smart-id-demo")
+                .withDeviceLinkBase(deviceLinkSessionInfo.getDeviceLinkBase())
+                .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
+                .withSessionType(sessionType)
+                .withSessionToken(deviceLinkSessionInfo.getSessionToken())
+                .withLang("eng")
+                .withInitialCallbackUrl(deviceLinkSessionInfo.getInitialCallbackUrl())
+                .withInteractions(deviceLinkSessionInfo.getInteractions())
+                .withDigest(deviceLinkSessionInfo.getDigest())
+                .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
+        if (deviceLinkSessionInfo.getMockUserAction().isSameDevice()) {
+            Cookie[] cookies = servletRequest.getCookies();
+            DeviceLinkMockRequest request = new DeviceLinkMockRequest(
+                    "PNOEE-40404040009-MOCK-Q",
+                    deviceLink.toString(),
+                    getDeviceLinkType(deviceLinkSessionInfo.getMockUserAction()).getValue(),
+                    "JSESSIONID=" + (cookies != null ? cookies[0].getValue() : "no-session-id"),
+                    deviceLinkSessionInfo.getInitialCallbackUrl()); // callback URL must be accessible outside your localhost
+            smartIdMockDeviceLinkClient.mock(session.getId(), request);
+        }
+        return deviceLink.toString();
+    }
 
-        return new DynamicContent(dynamicLink, qrDataUri);
+    public String getDeviceLink(HttpSession session, SessionType sessionType) {
+        logger.debug("Getting device link for session id: {}, session type: {}", session.getId(), sessionType);
+        DeviceLinkSessionInfo deviceLinkSessionInfo = (DeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+        URI deviceLink = smartIdClient.createDynamicContent()
+                .withSchemeName("smart-id-demo")
+                .withDeviceLinkBase(deviceLinkSessionInfo.getDeviceLinkBase())
+                .withDeviceLinkType(DeviceLinkType.WEB_2_APP)
+                .withSessionType(sessionType)
+                .withSessionToken(deviceLinkSessionInfo.getSessionToken())
+                .withLang("eng")
+                .withInitialCallbackUrl(deviceLinkSessionInfo.getInitialCallbackUrl())
+                .withInteractions(deviceLinkSessionInfo.getInteractions())
+                .withDigest(deviceLinkSessionInfo.getDigest())
+                .buildDeviceLink(deviceLinkSessionInfo.getSessionSecret());
+
+        return deviceLink.toString();
+    }
+
+    private DeviceLinkType getDeviceLinkType(UserActionMock mock) {
+        return switch (mock) {
+            case APP2APP -> DeviceLinkType.APP_2_APP;
+            case WEB2APP -> DeviceLinkType.WEB_2_APP;
+            default -> throw new IllegalStateException("Unexpected value: " + mock);
+        };
     }
 }

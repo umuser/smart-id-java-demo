@@ -81,12 +81,13 @@
     }
 
     function checkStatus() {
-        fetch('/linked/check-certificate-choice-status')
+        fetch('/device-link/check-certificate-choice-status')
             .then(response => response.json())
             .then(data => {
                 if (data.errorMessage !== undefined) {
+                    window.location.href = '/session-error?errorMessage=' + data.errorMessage;
                 } else if (data.sessionStatus === 'COMPLETED') {
-                    window.location.href = '/linked/signing';
+                    window.location.href = '/device-link/certificate-choice-result';
                 } else {
                     setTimeout(checkStatus, 1000);
                 }
@@ -95,7 +96,7 @@
     }
 
     function loadQrCode() {
-        fetch('/linked/cert-choice/qr-code')
+        fetch('/device-link/cert-choice/qr-code')
             .then(response => {
                 return response.text();
             })
@@ -107,7 +108,7 @@
     }
 
     function loadDeviceLink() {
-        fetch('/linked/cert-choice/url')
+        fetch('/device-link/cert-choice/url')
             .then(response => {
                 return response.text();
             })

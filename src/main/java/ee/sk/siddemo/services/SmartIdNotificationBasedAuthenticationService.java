@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.NotificationAuthenticationSessionInfo;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.AuthenticationCertificateLevel;
@@ -47,13 +48,17 @@ public class SmartIdNotificationBasedAuthenticationService {
 
     private final SmartIdClient smartIdClient;
     private final SmartIdSessionsStatusService sessionStatusService;
+    private final SessionStore sessionStore;
 
     @Value("${sid.auth.displayText}")
     private String displayText;
 
-    public SmartIdNotificationBasedAuthenticationService(SmartIdClient smartIdClient, SmartIdSessionsStatusService sessionStatusService) {
+    public SmartIdNotificationBasedAuthenticationService(SmartIdClient smartIdClient,
+                                                         SmartIdSessionsStatusService sessionStatusService,
+                                                         SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
         this.sessionStatusService = sessionStatusService;
+        this.sessionStore = sessionStore;
     }
 
     public String startAuthenticationWithPersonCode(HttpSession session, UserRequest userRequest) {
@@ -70,8 +75,9 @@ public class SmartIdNotificationBasedAuthenticationService {
                 .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)));
         NotificationAuthenticationSessionResponse sessionResponse = builder.initAuthenticationSession();
 
-        session.setAttribute("sessionID", sessionResponse.sessionID());
-        session.setAttribute("notificationAuthenticationSessionRequest", builder.getAuthenticationSessionRequest());
+
+        var notificationAuthenticationSessionInfo = new NotificationAuthenticationSessionInfo(sessionResponse.sessionID(), builder.getAuthenticationSessionRequest());
+        sessionStore.put(session.getId(), "notificationAuthenticationSessionInfo", notificationAuthenticationSessionInfo);
         return verificationCode;
     }
 
@@ -86,17 +92,18 @@ public class SmartIdNotificationBasedAuthenticationService {
                 .withInteractions(List.of(NotificationInteraction.displayTextAndPin(displayText)));
         NotificationAuthenticationSessionResponse sessionResponse = builder.initAuthenticationSession();
 
-        session.setAttribute("sessionID", sessionResponse.sessionID());
-        session.setAttribute("notificationAuthenticationSessionRequest", builder.getAuthenticationSessionRequest());
+        var notificationAuthenticationSessionInfo = new NotificationAuthenticationSessionInfo(sessionResponse.sessionID(), builder.getAuthenticationSessionRequest());
+        sessionStore.put(session.getId(), "notificationAuthenticationSessionInfo", notificationAuthenticationSessionInfo);
         return verificationCode;
     }
 
     public void checkAuthenticationStatus(HttpSession session) {
-        String sessionId = (String) session.getAttribute("sessionID");
+        var notificationAuthenticationSessionInfo = (NotificationAuthenticationSessionInfo) sessionStore.get(session.getId(), "notificationAuthenticationSessionInfo");
+        String sessionId = notificationAuthenticationSessionInfo.getSessionId();
         if (sessionId == null) {
             throw new SidOperationException("Session ID is missing");
         }
         SessionStatus sessionStatus = sessionStatusService.poll(sessionId);
-        session.setAttribute("authenticationSessionStatus", sessionStatus);
+        notificationAuthenticationSessionInfo.setSessionStatus(sessionStatus);
     }
 }

@@ -10,12 +10,12 @@ package ee.sk.siddemo.services;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
@@ -38,18 +38,21 @@ import org.digidoc4j.SignatureBuilder;
 import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.LinkedSigningRequest;
+import ee.sk.siddemo.model.LinkedSigningSessionInfo;
 import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignableData;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
@@ -57,6 +60,7 @@ import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.LinkedSignatureSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -70,26 +74,32 @@ public class SmartIdLinkedSigningService {
     private final SmartIdSessionsStatusService smartIdSessionsStatusService;
     private final CertificateChoiceResponseValidator certificateChoiceResponseValidator;
     private final SignatureResponseValidator signatureResponseValidator;
+    private final SessionStore sessionStore;
+
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
 
     public SmartIdLinkedSigningService(SmartIdClient smartIdClient,
                                        SmartIdSessionsStatusService smartIdSessionsStatusService,
                                        CertificateChoiceResponseValidator certificateChoiceResponseValidator,
-                                       SignatureResponseValidator signatureResponseValidator) {
+                                       SignatureResponseValidator signatureResponseValidator, SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
         this.smartIdSessionsStatusService = smartIdSessionsStatusService;
         this.certificateChoiceResponseValidator = certificateChoiceResponseValidator;
         this.signatureResponseValidator = signatureResponseValidator;
+        this.sessionStore = sessionStore;
     }
 
     public void startSigning(HttpSession session, @Valid LinkedSigningRequest linkedSigningRequest) {
         CertificateLevel certificateLevel = CertificateLevel.QUALIFIED;
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
                 .withCertificateLevel(certificateLevel)
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString())
                 .initCertificateChoice();
 
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("certificateLevel", certificateLevel);
-        session.setAttribute("signableFile", getUploadedDataFile(linkedSigningRequest.getFile()));
+        var linkedSigningSessionInfo = new LinkedSigningSessionInfo(response, certificateLevel, getUploadedDataFile(linkedSigningRequest.getFile()), callbackUrl);
+        sessionStore.put(session.getId(), "deviceLinkSessionInfo", linkedSigningSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
@@ -99,7 +109,6 @@ public class SmartIdLinkedSigningService {
                 .map(ss -> {
                     if (ss.getState().equals("COMPLETE")) {
                         saveValidateCertificateChoiceResponse(session, ss);
-                        session.setAttribute("session_status", "COMPLETED");
                         logger.debug("Mobile device IP address: {}", ss.getDeviceIpAddress());
                         return true;
                     }
@@ -109,16 +118,13 @@ public class SmartIdLinkedSigningService {
     }
 
     public void continueSigning(HttpSession session) {
-        CertificateChoiceResponse certChoiceResponse = (CertificateChoiceResponse) session.getAttribute("certificateChoiceResponse");
-        DeviceLinkSessionResponse deviceLinkSessionResponse = (DeviceLinkSessionResponse) session.getAttribute("sessionInitResponse");
-        DataFile dataFile = (DataFile) session.getAttribute("signableFile");
-        CertificateLevel requestCertificateLevel = (CertificateLevel) session.getAttribute("certificateLevel");
-
-        SignableData signableData = toSignableData(dataFile, certChoiceResponse.getCertificate(), session);
+        LinkedSigningSessionInfo sessionInfo = (LinkedSigningSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+        CertificateChoiceResponse certChoiceResponse = sessionInfo.getCertificateChoiceResponse();
+        SignableData signableData = toSignableData(sessionInfo.getUploadedDataFile(), certChoiceResponse.getCertificate(), sessionInfo);
         LinkedSignatureSessionResponse linkedSignatureSessionResponse = smartIdClient.createLinkedNotificationSignature()
                 .withDocumentNumber(certChoiceResponse.getDocumentNumber())
-                .withLinkedSessionID(deviceLinkSessionResponse.sessionID())
-                .withCertificateLevel(requestCertificateLevel)
+                .withLinkedSessionID(sessionInfo.getCertificateChoiceSessionId())
+                .withCertificateLevel(sessionInfo.getCertificateLevel())
                 .withSignableData(signableData)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign it!")))
                 .initSignatureSession();
@@ -131,7 +137,6 @@ public class SmartIdLinkedSigningService {
                 .map(ss -> {
                     if (ss.getState().equals("COMPLETE")) {
                         saveValidateSignatureResponse(session, ss);
-                        session.setAttribute("session_status", "COMPLETED");
                         logger.debug("Mobile device IP address: {}", ss.getDeviceIpAddress());
                         return true;
                     }
@@ -142,21 +147,22 @@ public class SmartIdLinkedSigningService {
 
     private void saveValidateCertificateChoiceResponse(HttpSession session, SessionStatus sessionStatus) {
         try {
-            CertificateLevel requestCertificateLevel = (CertificateLevel) session.getAttribute("certificateLevel");
-            CertificateChoiceResponse certChoiceResponse = certificateChoiceResponseValidator.validate(sessionStatus, requestCertificateLevel);
+            LinkedSigningSessionInfo sessionInfo = (LinkedSigningSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+            CertificateChoiceResponse certChoiceResponse = certificateChoiceResponseValidator.validate(sessionStatus, sessionInfo.getCertificateLevel());
             X509Certificate certificate = certChoiceResponse.getCertificate();
             String distinguishedName = certificate.getSubjectX500Principal().getName("RFC1779", OID_MAP);
             session.setAttribute("distinguishedName", distinguishedName);
-            session.setAttribute("certificateChoiceResponse", certChoiceResponse);
+            sessionInfo.setCertificateChoiceResponse(certChoiceResponse);
         } catch (SessionTimeoutException | UserRefusedException ex) {
             throw new SidOperationException(ex.getMessage());
         }
     }
 
-    private SignableData toSignableData(DataFile file, X509Certificate certificate, HttpSession session) {
+    private SignableData toSignableData(DataFile file, X509Certificate certificate, LinkedSigningSessionInfo sessionInfo) {
         Container container = toContainer(file);
         DataToSign dataToSign = toDataToSign(container, certificate);
-        saveSigningAttributes(session, container, dataToSign);
+        sessionInfo.setContainer(container);
+        sessionInfo.setDataToSign(dataToSign);
         return new SignableData(dataToSign.getDataToSign());
     }
 
@@ -176,11 +182,6 @@ public class SmartIdLinkedSigningService {
                 .buildDataToSign();
     }
 
-    private static void saveSigningAttributes(HttpSession session, Container container, DataToSign dataToSign) {
-        session.setAttribute("container", container);
-        session.setAttribute("dataToSign", dataToSign);
-    }
-
     private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
         try {
             return new DataFile(uploadedFile.getInputStream(), uploadedFile.getOriginalFilename(), uploadedFile.getContentType());
@@ -191,9 +192,9 @@ public class SmartIdLinkedSigningService {
 
     private void saveValidateSignatureResponse(HttpSession session, SessionStatus status) {
         try {
-            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("certificateLevel");
-            var dynamicLinkSignatureResponse = signatureResponseValidator.validate(status, requestedCertificateLevel);
-            session.setAttribute("signatureResponse", dynamicLinkSignatureResponse);
+            LinkedSigningSessionInfo sessionInfo = (LinkedSigningSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+            var dynamicLinkSignatureResponse = signatureResponseValidator.validate(status, sessionInfo.getCertificateLevel());
+            sessionInfo.setSignatureResponse(dynamicLinkSignatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         }

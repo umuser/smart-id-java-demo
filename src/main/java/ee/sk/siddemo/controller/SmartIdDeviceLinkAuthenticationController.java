@@ -10,19 +10,18 @@ package ee.sk.siddemo.controller;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
  * #L%
  */
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -38,12 +37,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import ee.sk.siddemo.exception.SidOperationException;
-import ee.sk.siddemo.model.DynamicContent;
+import ee.sk.siddemo.model.AnonymousRequest;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.siddemo.services.DynamicContentService;
 import ee.sk.siddemo.services.SmartIdDeviceLinkAuthenticationService;
 import ee.sk.smartid.SessionType;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
@@ -62,9 +62,11 @@ public class SmartIdDeviceLinkAuthenticationController {
         this.dynamicContentService = dynamicContentService;
     }
 
-    @GetMapping(value = "/device-link/start-authentication")
-    public ModelAndView startAuthentication(ModelMap model, HttpSession session) {
-        smartIdDeviceLinkAuthenticationService.startAuthentication(session);
+    @PostMapping(value = "/device-link/start-authentication")
+    public ModelAndView startAuthentication(@ModelAttribute("anonymousRequest") @Valid AnonymousRequest anonymousRequest,
+                                            ModelMap model,
+                                            HttpSession session) {
+        smartIdDeviceLinkAuthenticationService.startAuthentication(session, anonymousRequest);
         model.addAttribute("activeTab", "rp-api-v3");
         return new ModelAndView("device-link/authentication", model);
     }
@@ -109,13 +111,16 @@ public class SmartIdDeviceLinkAuthenticationController {
             logger.debug("Session status: COMPLETED");
             return ResponseEntity.ok(Map.of("sessionStatus", "COMPLETED"));
         }
+        return ResponseEntity.ok(Map.of("sessionStatus", "RUNNING"));
+    }
 
-        // Generate QR-code and dynamic link
-        logger.debug("Generate dynamic content for session {}", session.getId());
-        DynamicContent dynamicContent = dynamicContentService.getDynamicContent(session, SessionType.AUTHENTICATION);
-        Map<String, String> content = new HashMap<>();
-        content.put("dynamicLink", dynamicContent.getDynamicLink().toString());
-        content.put("qrCode", dynamicContent.getQrCode());
-        return ResponseEntity.ok(content);
+    @GetMapping(value = "/device-link/authentication/qr-code")
+    public ResponseEntity<String> getAuthenticationQrCode(HttpSession session) {
+        return ResponseEntity.ok(dynamicContentService.getQrCode(session, SessionType.AUTHENTICATION));
+    }
+
+    @GetMapping(value = "/device-link/authentication/url")
+    public ResponseEntity<String> getAuthenticationDeviceLink(HttpSession session, HttpServletRequest request) {
+        return ResponseEntity.ok(dynamicContentService.getDeviceLink(session, SessionType.AUTHENTICATION, request));
     }
 }

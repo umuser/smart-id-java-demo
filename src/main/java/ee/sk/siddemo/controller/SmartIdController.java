@@ -27,12 +27,18 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import ee.sk.siddemo.model.AnonymousRequest;
 import ee.sk.siddemo.model.LinkedSigningRequest;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 
 @Controller
 public class SmartIdController {
+
+    @ModelAttribute("anonymousRequest")
+    public AnonymousRequest anonymousRequest() {
+        return new AnonymousRequest();
+    }
 
     @ModelAttribute("userRequest")
     public UserRequest userRequest() {

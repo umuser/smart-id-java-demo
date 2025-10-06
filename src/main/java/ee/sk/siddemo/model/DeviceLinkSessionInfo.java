@@ -10,50 +10,42 @@ package ee.sk.siddemo.model;
  * it under the terms of the GNU Lesser General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-3.0.html>.
  * #L%
  */
 
-import org.springframework.web.multipart.MultipartFile;
+import java.time.Instant;
 
-import jakarta.validation.constraints.NotNull;
+public interface DeviceLinkSessionInfo {
 
-public class UserDocumentNumberRequest {
+    Instant getSessionResponseReceived();
 
-    @NotNull
-    private String documentNumber;
-    private MultipartFile file;
-    private UserActionMock userActionMock = UserActionMock.NONE;
+    String getDeviceLinkBase();
 
-    public String getDocumentNumber() {
-        return documentNumber;
-    }
+    String getSessionToken();
 
-    public void setDocumentNumber(String documentNumber) {
-        this.documentNumber = documentNumber;
-    }
+    String getInteractions();
 
-    public MultipartFile getFile() {
-        return file;
-    }
+    String getDigest();
 
-    public void setFile(MultipartFile file) {
-        this.file = file;
-    }
+    String getSessionSecret();
 
-    public UserActionMock getUserActionMock() {
-        return userActionMock;
-    }
+    String getInitialCallbackUrl();
 
-    public void setUserActionMock(UserActionMock userActionMock) {
-        this.userActionMock = userActionMock;
-    }
+    String getUrlToken();
+
+    void setUserChallengeVerifier(String userChallengeVerifier);
+
+    String getUserChallengeVerifier();
+
+    UserActionMock getMockUserAction();
+
 }

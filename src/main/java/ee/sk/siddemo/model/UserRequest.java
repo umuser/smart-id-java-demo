@@ -39,6 +39,7 @@ public class UserRequest {
             message = "Invalid national identity number")
     private String nationalIdentityNumber;
 
+    private UserActionMock userActionMock = UserActionMock.NONE;
 
     private MultipartFile file;
 
@@ -64,5 +65,13 @@ public class UserRequest {
 
     public void setCountry(String country) {
         this.country = country;
+    }
+
+    public UserActionMock getUserActionMock() {
+        return userActionMock;
+    }
+
+    public void setUserActionMock(UserActionMock userActionMock) {
+        this.userActionMock = userActionMock;
     }
 }

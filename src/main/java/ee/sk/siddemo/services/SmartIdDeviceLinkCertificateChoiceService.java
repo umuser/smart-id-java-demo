@@ -28,17 +28,21 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.DeviceLinkCertificateChoiceSessionInfo;
 import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SessionStatus;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -51,24 +55,32 @@ public class SmartIdDeviceLinkCertificateChoiceService {
     private final SmartIdClient smartIdClient;
     private final SmartIdSessionsStatusService smartIdSessionsStatusService;
     private final CertificateChoiceResponseValidator certificateChoiceResponseValidator;
+    private final SessionStore sessionStore;
+
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
 
     public SmartIdDeviceLinkCertificateChoiceService(SmartIdClient smartIdClient,
                                                      SmartIdSessionsStatusService smartIdSessionsStatusService,
-                                                     CertificateChoiceResponseValidator certificateChoiceResponseValidator) {
+                                                     CertificateChoiceResponseValidator certificateChoiceResponseValidator,
+                                                     SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
         this.smartIdSessionsStatusService = smartIdSessionsStatusService;
         this.certificateChoiceResponseValidator = certificateChoiceResponseValidator;
+        this.sessionStore = sessionStore;
     }
 
     public void startCertificateChoice(HttpSession session) {
+        CertificateLevel requesteCertificateLevel = CertificateLevel.QUALIFIED;
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkSessionResponse response = this.smartIdClient.createDeviceLinkCertificateRequest()
-                .withCertificateLevel(CertificateLevel.QUALIFIED)
+                .withCertificateLevel(requesteCertificateLevel)
                 .withShareMdClientIpAddress(true)
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString())
                 .initCertificateChoice();
 
-        session.setAttribute("sessionID", response.sessionID());
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("certificateLevel", CertificateLevel.QUALIFIED);
+        var sessionInfo = new DeviceLinkCertificateChoiceSessionInfo(response, requesteCertificateLevel, callbackUrl);
+        sessionStore.put(session.getId(), "deviceLinkSessionInfo", sessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
@@ -78,7 +90,6 @@ public class SmartIdDeviceLinkCertificateChoiceService {
                 .map(ss -> {
                     if (ss.getState().equals("COMPLETE")) {
                         saveValidateResponse(session, ss);
-                        session.setAttribute("session_status", "COMPLETED");
                         logger.debug("Mobile device IP address: {}", ss.getDeviceIpAddress());
                         return true;
                     }
@@ -89,8 +100,10 @@ public class SmartIdDeviceLinkCertificateChoiceService {
 
     private void saveValidateResponse(HttpSession session, SessionStatus sessionStatus) {
         try {
-            CertificateLevel requestCertificateLevel = (CertificateLevel) session.getAttribute("certificateLevel");
-            CertificateChoiceResponse certChoiceResponse = certificateChoiceResponseValidator.validate(sessionStatus, requestCertificateLevel);
+            DeviceLinkCertificateChoiceSessionInfo sessionInfo = (DeviceLinkCertificateChoiceSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+            CertificateChoiceResponse certChoiceResponse = certificateChoiceResponseValidator.validate(sessionStatus, sessionInfo.getCertificateLevel());
+            sessionInfo.setCertificateChoiceResponse(certChoiceResponse);
+
             X509Certificate certificate = certChoiceResponse.getCertificate();
             String distinguishedName = certificate.getSubjectX500Principal().getName("RFC1779", OID_MAP);
             session.setAttribute("distinguishedName", distinguishedName);

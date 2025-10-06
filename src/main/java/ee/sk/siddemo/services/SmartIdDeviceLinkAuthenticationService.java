@@ -30,6 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import ee.sk.siddemo.model.AnonymousRequest;
+import ee.sk.siddemo.model.DeviceLinkAuthenticationDeviceLinkSessionInfo;
+import ee.sk.siddemo.model.UserActionMock;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
 import ee.sk.smartid.AuthenticationCertificateLevel;
@@ -38,11 +41,13 @@ import ee.sk.smartid.HashAlgorithm;
 import ee.sk.smartid.RpChallengeGenerator;
 import ee.sk.smartid.SignatureAlgorithm;
 import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.common.devicelink.interactions.DeviceLinkInteraction;
 import ee.sk.smartid.rest.dao.DeviceLinkAuthenticationSessionRequest;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
+import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 
 @Service
@@ -52,39 +57,47 @@ public class SmartIdDeviceLinkAuthenticationService {
 
     private final SmartIdClient smartIdClient;
     private final SmartIdSessionsStatusService smartIdSessionsStatusService;
+    private final SessionStore sessionStore;
 
     @Value("${sid.auth.displayText}")
     private String displayText;
+    @Value("${sid.callbackUrl}")
+    private String callbackUrlBase;
 
     public SmartIdDeviceLinkAuthenticationService(SmartIdClient smartIdClient,
-                                                  SmartIdSessionsStatusService smartIdSessionsStatusService) {
+                                                  SmartIdSessionsStatusService smartIdSessionsStatusService,
+                                                  SessionStore sessionStore) {
         this.smartIdClient = smartIdClient;
         this.smartIdSessionsStatusService = smartIdSessionsStatusService;
+        this.sessionStore = sessionStore;
     }
 
-    public void startAuthentication(HttpSession session) {
+    public void startAuthentication(HttpSession session, AnonymousRequest anonymousRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
                 .withCertificateLevel(authenticationCertificateLevel)
                 .withSignatureAlgorithm(SignatureAlgorithm.RSASSA_PSS)
                 .withHashAlgorithm(HashAlgorithm.SHA3_512)
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin(displayText)))
+                .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString())
                 .withShareMdClientIpAddress(true);
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        updateSession(session, response, rpChallenge, request);
-
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, anonymousRequest.getUserActionMock());
+        sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     public void startAuthentication(HttpSession session, UserRequest userRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPin(displayText));
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
                 .withSemanticsIdentifier(semanticsIdentifier)
@@ -96,15 +109,16 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        updateSession(session, response, rpChallenge, request);
-
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, UserActionMock.NONE);
+        sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     public void startAuthentication(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var requestedCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
+        var requestedCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
         List<DeviceLinkInteraction> interactions = List.of(DeviceLinkInteraction.displayTextAndPin(displayText));
+        CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
@@ -116,17 +130,9 @@ public class SmartIdDeviceLinkAuthenticationService {
         DeviceLinkSessionResponse response = builder.initAuthenticationSession();
         DeviceLinkAuthenticationSessionRequest request = builder.getAuthenticationSessionRequest();
 
-        updateSession(session, response, rpChallenge, request);
-
+        var deviceLinkAuthenticationDeviceLinkSessionInfo = new DeviceLinkAuthenticationDeviceLinkSessionInfo(response, request, callbackUrl, UserActionMock.NONE);
+        sessionStore.put(session.getId(), "deviceLinkSessionInfo", deviceLinkAuthenticationDeviceLinkSessionInfo);
         smartIdSessionsStatusService.startPolling(session, response.sessionID());
-    }
-
-    private static void updateSession(HttpSession session, DeviceLinkSessionResponse response, String rpChallenge, DeviceLinkAuthenticationSessionRequest request) {
-        session.setAttribute("sessionID", response.sessionID());
-        session.setAttribute("rpChallenge", rpChallenge);
-        session.setAttribute("sessionInitResponse", response);
-        session.setAttribute("authenticationSessionRequest", request);
-        session.setAttribute("interactions", request.interactions());
     }
 
     public boolean checkAuthenticationStatus(HttpSession session) {
@@ -134,13 +140,25 @@ public class SmartIdDeviceLinkAuthenticationService {
         return sessionStatus
                 .map(status -> {
                     if (status.getState().equals("COMPLETE")) {
-                        session.setAttribute("authenticationSessionStatus", status);
-                        session.setAttribute("session_status", "COMPLETED");
-                        logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
+                        DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo = (DeviceLinkAuthenticationDeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+                        if (sessionInfo.getSessionStatus() == null) {
+                            sessionInfo.setSessionStatus(status);
+                            logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
+                        }
+                        if (!isCallbackCompleted(sessionInfo)) {
+                            logger.debug("Callback not yet received.");
+                            return false;
+                        }
                         return true;
                     }
                     return false;
                 })
                 .orElse(false);
+    }
+
+    private static boolean isCallbackCompleted(DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo) {
+        return sessionInfo.getSessionStatus().getSignature() != null
+                && !sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")
+                && sessionInfo.getUserChallengeVerifier() != null;
     }
 }
