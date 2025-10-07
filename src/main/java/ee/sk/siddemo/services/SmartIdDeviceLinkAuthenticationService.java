@@ -141,12 +141,13 @@ public class SmartIdDeviceLinkAuthenticationService {
                 .map(status -> {
                     if (status.getState().equals("COMPLETE")) {
                         DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo = (DeviceLinkAuthenticationDeviceLinkSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+                        // TODO - 07.10.25: this should be reworked. Should not provide both - either QR-code or device-link only
                         if (sessionInfo.getSessionStatus() == null) {
                             sessionInfo.setSessionStatus(status);
                             logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
                         }
                         if (!isCallbackCompleted(sessionInfo)) {
-                            logger.debug("Callback not yet received.");
+                            logger.info("Callback not yet received.");
                             return false;
                         }
                         return true;
@@ -157,8 +158,14 @@ public class SmartIdDeviceLinkAuthenticationService {
     }
 
     private static boolean isCallbackCompleted(DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo) {
-        return sessionInfo.getSessionStatus().getSignature() != null
-                && !sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")
-                && sessionInfo.getUserChallengeVerifier() != null;
+        if (sessionInfo.getSessionStatus().getSignature() == null) {
+            logger.debug("Signature completed with error");
+            return true;
+        }
+        if (sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")) {
+            logger.debug("QR flow, callback completed and userChallengeVerifier should not be checked");
+            return true;
+        }
+        return sessionInfo.getUserChallengeVerifier() != null;
     }
 }
