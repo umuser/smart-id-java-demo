@@ -74,7 +74,7 @@ public class SmartIdDeviceLinkAuthenticationService {
 
     public void startAuthentication(HttpSession session, AnonymousRequest anonymousRequest) {
         String rpChallenge = RpChallengeGenerator.generate().toBase64EncodedValue();
-        var authenticationCertificateLevel = AuthenticationCertificateLevel.QUALIFIED;
+        var authenticationCertificateLevel = AuthenticationCertificateLevel.ADVANCED;
         CallbackUrl callbackUrl = CallbackUrlUtil.createCallbackUrl(callbackUrlBase);
         DeviceLinkAuthenticationSessionRequestBuilder builder = smartIdClient.createDeviceLinkAuthentication()
                 .withRpChallenge(rpChallenge)
@@ -145,6 +145,7 @@ public class SmartIdDeviceLinkAuthenticationService {
                             sessionInfo.setSessionStatus(status);
                             logger.debug("Mobile device IP address: {}", status.getDeviceIpAddress());
                         }
+                        // TODO - 07.10.25: this should be reworked. Provide only one flow for use QR-code or device-link.
                         if (!isCallbackCompleted(sessionInfo)) {
                             logger.debug("Callback not yet received.");
                             return false;
@@ -157,8 +158,14 @@ public class SmartIdDeviceLinkAuthenticationService {
     }
 
     private static boolean isCallbackCompleted(DeviceLinkAuthenticationDeviceLinkSessionInfo sessionInfo) {
-        return sessionInfo.getSessionStatus().getSignature() != null
-                && !sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")
-                && sessionInfo.getUserChallengeVerifier() != null;
+        if (sessionInfo.getSessionStatus().getSignature() == null) {
+            logger.debug("Signature completed with error");
+            return true;
+        }
+        if (sessionInfo.getSessionStatus().getSignature().getFlowType().equals("QR")) {
+            logger.debug("QR flow, callback completed and userChallengeVerifier should not be checked");
+            return true;
+        }
+        return sessionInfo.getUserChallengeVerifier() != null;
     }
 }
