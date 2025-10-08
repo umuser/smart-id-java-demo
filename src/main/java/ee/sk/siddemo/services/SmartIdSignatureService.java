@@ -23,6 +23,7 @@ package ee.sk.siddemo.services;
  */
 
 import java.time.ZonedDateTime;
+import java.util.Date;
 
 import org.digidoc4j.DataToSign;
 import org.springframework.stereotype.Service;
@@ -45,9 +46,9 @@ public class SmartIdSignatureService {
     }
 
     public SigningResult handleSignatureResult(HttpSession session) {
-        SignatureSessionInfo sessionInfo = (SignatureSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
-        SignatureResponse signatureResponse = sessionInfo.getSignatureResponse();
-        DataToSign dataToSign = sessionInfo.getDataToSign();
+        SignatureSessionInfo signatureSessionInfo = getSignatureSessionInfo(session);
+        SignatureResponse signatureResponse = signatureSessionInfo.getSignatureResponse();
+        DataToSign dataToSign = signatureSessionInfo.getDataToSign();
         if (signatureResponse == null || dataToSign == null) {
             throw new SidOperationException("Required session data is missing");
         }
@@ -61,8 +62,20 @@ public class SmartIdSignatureService {
         return SigningResult.newBuilder()
                 .withResult("Signing successful")
                 .withValid(true)
-                .withTimestamp(java.util.Date.from(ZonedDateTime.now().toInstant()))
+                .withTimestamp(Date.from(ZonedDateTime.now().toInstant()))
                 .withContainerFilePath("N/A – container not created in demo")
                 .build();
+    }
+
+    private SignatureSessionInfo getSignatureSessionInfo(HttpSession session) {
+        SignatureSessionInfo deviceLinkSignatureSessionInfo = (SignatureSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
+        if (deviceLinkSignatureSessionInfo != null) {
+            return deviceLinkSignatureSessionInfo;
+        }
+        SignatureSessionInfo notificationBasedSignatureSessionInfo = (SignatureSessionInfo) sessionStore.get(session.getId(), "notificationSignatureSessionInfo");
+        if (notificationBasedSignatureSessionInfo != null) {
+            return notificationBasedSignatureSessionInfo;
+        }
+        throw new SidOperationException("No signature session info found in the current session");
     }
 }
