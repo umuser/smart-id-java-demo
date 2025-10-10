@@ -25,7 +25,6 @@ package ee.sk.siddemo.services;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.Optional;
 
 import org.digidoc4j.Configuration;
 import org.digidoc4j.Container;
@@ -39,21 +38,25 @@ import org.springframework.web.multipart.MultipartFile;
 
 import ee.sk.siddemo.exception.FileUploadException;
 import ee.sk.siddemo.exception.SidOperationException;
+import ee.sk.siddemo.model.NotificationSignatureSessionInfo;
 import ee.sk.siddemo.model.UserDocumentNumberRequest;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.CertificateByDocumentNumberResult;
+import ee.sk.smartid.CertificateChoiceResponse;
+import ee.sk.smartid.CertificateChoiceResponseValidator;
+import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.HashAlgorithm;
+import ee.sk.smartid.SignableData;
+import ee.sk.smartid.SignatureResponseValidator;
+import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.common.notification.interactions.NotificationInteraction;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.CertificateChoiceResponse;
-import ee.sk.smartid.CertificateLevel;
-import ee.sk.smartid.SignableData;
-import ee.sk.smartid.SignatureResponseValidator;
-import ee.sk.smartid.SmartIdClient;
+import ee.sk.smartid.rest.dao.NotificationCertificateChoiceSessionResponse;
 import ee.sk.smartid.rest.dao.NotificationSignatureSessionResponse;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
 
@@ -62,77 +65,91 @@ public class SmartIdNotificationBasedSigningService {
 
     private final SmartIdClient smartIdClient;
     private final SmartIdSessionsStatusService sessionStatusService;
-    private final SmartIdNotificationBasedCertificateChoiceService notificationCertificateChoiceService;
     private final SignatureResponseValidator signatureResponseValidator;
+    private final SessionStore sessionStore;
+    private final CertificateChoiceResponseValidator certificateChoiceResponseValidator;
 
     public SmartIdNotificationBasedSigningService(SmartIdClient smartIdClient,
                                                   SmartIdSessionsStatusService sessionStatusService,
-                                                  SmartIdNotificationBasedCertificateChoiceService notificationCertificateChoiceService, SignatureResponseValidator signatureResponseValidator) {
+                                                  SignatureResponseValidator signatureResponseValidator,
+                                                  SessionStore sessionStore, CertificateChoiceResponseValidator certificateChoiceResponseValidator) {
         this.smartIdClient = smartIdClient;
         this.sessionStatusService = sessionStatusService;
-        this.notificationCertificateChoiceService = notificationCertificateChoiceService;
         this.signatureResponseValidator = signatureResponseValidator;
+        this.sessionStore = sessionStore;
+        this.certificateChoiceResponseValidator = certificateChoiceResponseValidator;
     }
 
     public String startSigningWithDocumentNumber(HttpSession session, UserDocumentNumberRequest userDocumentNumberRequest) {
-        var signatureCertificateLevel = CertificateLevel.QUALIFIED;
-
-        X509Certificate certificate = smartIdClient
+        var signatureCertificateLevel = CertificateLevel.QSCD;
+        CertificateByDocumentNumberResult certificateResult = smartIdClient
                 .createCertificateByDocumentNumber()
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withCertificateLevel(signatureCertificateLevel)
-                .getCertificateByDocumentNumber()
-                .certificate();
+                .getCertificateByDocumentNumber();
+        var sessionInfoBuilder = NotificationSignatureSessionInfo.builder()
+                .withSignatureCertificateLevel(signatureCertificateLevel)
+                .withCertificateResult(certificateResult);
 
-
-        SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificate, session);
+        SignableData signableData = toSignableData(userDocumentNumberRequest.getFile(), certificateResult.certificate(), sessionInfoBuilder);
         NotificationSignatureSessionResponse sessionResponse = smartIdClient.createNotificationSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
                 .initSignatureSession();
 
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("signatureCertificateLevel", signatureCertificateLevel);
-        return sessionResponse.getVc().getValue();
+        var sessionInfo = sessionInfoBuilder.withSessionResponse(sessionResponse).build();
+        sessionStore.put(session.getId(), "notificationSignatureSessionInfo", sessionInfo);
+        return sessionResponse.vc().value();
     }
 
     public String startSigningWithPersonCode(HttpSession session, UserRequest userRequest) {
         var signatureCertificateLevel = CertificateLevel.QUALIFIED;
-        notificationCertificateChoiceService.startCertificateChoice(session, userRequest, signatureCertificateLevel);
-        var signableData = toSignableData(userRequest.getFile(), session);
+        var sessionInfoBuilder = NotificationSignatureSessionInfo.builder().withSignatureCertificateLevel(signatureCertificateLevel);
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
+        NotificationCertificateChoiceSessionResponse response = smartIdClient.createNotificationCertificateChoice()
+                .withCertificateLevel(signatureCertificateLevel)
+                .withSemanticsIdentifier(semanticsIdentifier)
+                .initCertificateChoice();
+        SessionStatus certChoiceSessionStatus = sessionStatusService.poll(response.sessionID());
+        CertificateChoiceResponse certChoiceResponse = certificateChoiceResponseValidator.validate(certChoiceSessionStatus, signatureCertificateLevel);
+        sessionInfoBuilder.withCertChoiceResponse(certChoiceResponse);
+        var signableData = toSignableData(userRequest.getFile(), certChoiceResponse.getCertificate(), sessionInfoBuilder);
         NotificationSignatureSessionResponse sessionResponse = smartIdClient.createNotificationSignature()
                 .withCertificateLevel(signatureCertificateLevel)
                 .withSignableData(signableData)
                 .withSemanticsIdentifier(semanticsIdentifier)
-                .withAllowedInteractionsOrder(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
+                .withInteractions(List.of(NotificationInteraction.displayTextAndPin("Sign the document!")))
                 .initSignatureSession();
-
-        session.setAttribute("sessionID", sessionResponse.getSessionID());
-        session.setAttribute("signatureCertificateLevel", signatureCertificateLevel);
-        return sessionResponse.getVc().getValue();
+        var sessionInfo = sessionInfoBuilder.withSessionResponse(sessionResponse).build();
+        sessionStore.put(session.getId(), "notificationSignatureSessionInfo", sessionInfo);
+        return sessionResponse.vc().value();
     }
 
     public void checkSignatureStatus(HttpSession session) {
-        String sessionId = (String) session.getAttribute("sessionID");
-        if (sessionId == null) {
-            throw new SidOperationException("Session ID is missing");
+        NotificationSignatureSessionInfo sessionInfo = (NotificationSignatureSessionInfo) sessionStore.get(session.getId(), "notificationSignatureSessionInfo");
+        if (sessionInfo == null) {
+            throw new SidOperationException("No signing session info found");
         }
+        String sessionId = sessionInfo.getSessionId();
         SessionStatus sessionStatus = sessionStatusService.poll(sessionId);
-        saveValidateResponse(session, sessionStatus);
+        try {
+            CertificateLevel requestedCertificateLevel = sessionInfo.getSignatureCertificateLevel();
+            var signatureResponse = signatureResponseValidator.validate(sessionStatus, requestedCertificateLevel);
+            sessionInfo.setSignatureResponse(signatureResponse);
+        } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException | UserSelectedWrongVerificationCodeException ex) {
+            throw new SidOperationException(ex.getMessage());
+        }
     }
 
-    private SignableData toSignableData(MultipartFile uploadedFile, HttpSession session) {
-        return toSignableData(uploadedFile, getCertificate(session), session);
-    }
-
-    private SignableData toSignableData(MultipartFile uploadedFile, X509Certificate certificate, HttpSession session) {
+    private SignableData toSignableData(MultipartFile uploadedFile,
+                                        X509Certificate certificate,
+                                        NotificationSignatureSessionInfo.Builder sessionInfoBuilder) {
         Container container = toContainer(uploadedFile);
         DataToSign dataToSign = toDataToSign(container, certificate);
-        saveSigningAttributes(session, dataToSign, container);
-
+        sessionInfoBuilder.withDataToSign(dataToSign);
+        sessionInfoBuilder.withContainer(container);
         // hash algorithm has to match SignatureDigestAlgorithm used in dataToSign
         return new SignableData(dataToSign.getDataToSign(), HashAlgorithm.SHA_256);
     }
@@ -145,26 +162,6 @@ public class SmartIdNotificationBasedSigningService {
                 .withConfiguration(configuration)
                 .withDataFile(uploadedFile)
                 .build();
-    }
-
-    private X509Certificate getCertificate(HttpSession session) {
-        Optional<SessionStatus> certSessionStatus;
-        do {
-            certSessionStatus = getCertificateChoiceSessionStatus(session);
-        } while (certSessionStatus.isEmpty());
-
-        CertificateChoiceResponse certificateChoiceResponse = notificationCertificateChoiceService.getCertificateChoice(session, certSessionStatus.get());
-        return certificateChoiceResponse.getCertificate();
-    }
-
-    private Optional<SessionStatus> getCertificateChoiceSessionStatus(HttpSession session) {
-        Optional<SessionStatus> certSessionStatus;
-        try {
-            certSessionStatus = sessionStatusService.getSessionsStatus(session.getId());
-        } catch (SessionTimeoutException | UserRefusedException ex) {
-            throw new SidOperationException(ex.getMessage());
-        }
-        return certSessionStatus;
     }
 
     private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
@@ -180,22 +177,5 @@ public class SmartIdNotificationBasedSigningService {
                 .withSigningCertificate(certificate)
                 .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
                 .buildDataToSign();
-    }
-
-    private static void saveSigningAttributes(HttpSession session,
-                                              DataToSign dataToSign,
-                                              Container container) {
-        session.setAttribute("dataToSign", dataToSign);
-        session.setAttribute("container", container);
-    }
-
-    private void saveValidateResponse(HttpSession session, SessionStatus status) {
-        try {
-            CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("signatureCertificateLevel");
-            var signatureResponse = signatureResponseValidator.validate(status, requestedCertificateLevel);
-            session.setAttribute("signatureResponse", signatureResponse);
-        } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException | UserSelectedWrongVerificationCodeException ex) {
-            throw new SidOperationException(ex.getMessage());
-        }
     }
 }

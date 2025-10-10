@@ -50,6 +50,7 @@ import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
 import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignableData;
+import ee.sk.smartid.SignatureResponse;
 import ee.sk.smartid.SignatureResponseValidator;
 import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.common.devicelink.CallbackUrl;
@@ -67,7 +68,8 @@ import jakarta.validation.Valid;
 @Service
 public class SmartIdLinkedSigningService {
 
-    private static final Logger logger = LoggerFactory.getLogger(SmartIdDeviceLinkCertificateChoiceService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SmartIdLinkedSigningService.class);
+
     private static final Map<String, String> OID_MAP = Map.of("2.5.4.5", "serialNumber", "2.5.4.42", "givenName", "2.5.4.4", "surname");
 
     private final SmartIdClient smartIdClient;
@@ -193,8 +195,8 @@ public class SmartIdLinkedSigningService {
     private void saveValidateSignatureResponse(HttpSession session, SessionStatus status) {
         try {
             LinkedSigningSessionInfo sessionInfo = (LinkedSigningSessionInfo) sessionStore.get(session.getId(), "deviceLinkSessionInfo");
-            var dynamicLinkSignatureResponse = signatureResponseValidator.validate(status, sessionInfo.getCertificateLevel());
-            sessionInfo.setSignatureResponse(dynamicLinkSignatureResponse);
+            SignatureResponse signatureResponse = signatureResponseValidator.validate(status, sessionInfo.getCertificateLevel());
+            sessionInfo.setSignatureResponse(signatureResponse);
         } catch (SessionTimeoutException | UserRefusedException | CertificateLevelMismatchException ex) {
             throw new SidOperationException(ex.getMessage());
         }

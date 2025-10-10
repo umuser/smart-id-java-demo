@@ -31,12 +31,12 @@ import ee.sk.smartid.CertificateLevel;
 import ee.sk.smartid.SignatureResponse;
 import ee.sk.smartid.common.devicelink.CallbackUrl;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
-import ee.sk.smartid.rest.dao.SignatureSessionRequest;
+import ee.sk.smartid.rest.dao.DeviceLinkSignatureSessionRequest;
 
 public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, SignatureSessionInfo {
 
     private final DeviceLinkSessionResponse sessionResponse;
-    private final SignatureSessionRequest sessionRequest;
+    private final DeviceLinkSignatureSessionRequest sessionRequest;
     private final CertificateLevel requestedCertificateLevel;
     private final Container container;
     private final DataToSign dataToSign;
@@ -46,7 +46,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     private UserActionMock userActionMock = UserActionMock.NONE;
 
     private DeviceLinkSignatureSessionInfo(DeviceLinkSessionResponse sessionResponse,
-                                           SignatureSessionRequest sessionRequest,
+                                           DeviceLinkSignatureSessionRequest sessionRequest,
                                            CertificateLevel requestedCertificateLevel,
                                            Container container,
                                            DataToSign dataToSign,
@@ -143,7 +143,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
     public static class Builder {
 
         private DeviceLinkSessionResponse sessionResponse;
-        private SignatureSessionRequest sessionRequest;
+        private DeviceLinkSignatureSessionRequest sessionRequest;
         private CertificateLevel requestedCertificateLevel;
         private Container container;
         private DataToSign dataToSign;
@@ -154,7 +154,7 @@ public class DeviceLinkSignatureSessionInfo implements DeviceLinkSessionInfo, Si
             return this;
         }
 
-        public Builder withSessionRequest(SignatureSessionRequest sessionRequest) {
+        public Builder withSessionRequest(DeviceLinkSignatureSessionRequest sessionRequest) {
             this.sessionRequest = sessionRequest;
             return this;
         }

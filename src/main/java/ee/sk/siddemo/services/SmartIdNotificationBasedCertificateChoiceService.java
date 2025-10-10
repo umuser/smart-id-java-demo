@@ -31,20 +31,19 @@ import org.springframework.stereotype.Service;
 
 import ee.sk.siddemo.exception.SidOperationException;
 import ee.sk.siddemo.model.UserRequest;
+import ee.sk.smartid.CertificateChoiceResponse;
 import ee.sk.smartid.CertificateChoiceResponseValidator;
+import ee.sk.smartid.CertificateLevel;
+import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.exception.permanent.SmartIdClientException;
 import ee.sk.smartid.exception.useraccount.CertificateLevelMismatchException;
 import ee.sk.smartid.exception.useraction.SessionTimeoutException;
 import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.exception.useraction.UserSelectedWrongVerificationCodeException;
-import ee.sk.smartid.rest.dao.SemanticsIdentifier;
-import ee.sk.smartid.CertificateChoiceResponse;
-import ee.sk.smartid.CertificateLevel;
-import ee.sk.smartid.SmartIdClient;
 import ee.sk.smartid.rest.dao.NotificationCertificateChoiceSessionResponse;
+import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 
 @Service
 public class SmartIdNotificationBasedCertificateChoiceService {
@@ -64,11 +63,8 @@ public class SmartIdNotificationBasedCertificateChoiceService {
         this.certificateChoiceResponseValidator = certificateChoiceResponseValidator;
     }
 
-    public void startCertificateChoice(HttpSession session, @Valid UserRequest userRequest) {
-        startCertificateChoice(session, userRequest, CertificateLevel.QSCD);
-    }
-
-    public void startCertificateChoice(HttpSession session, UserRequest userRequest, CertificateLevel certificateLevel) {
+    public void startCertificateChoice(HttpSession session, UserRequest userRequest) {
+        CertificateLevel certificateLevel = CertificateLevel.QSCD;
         var semanticsIdentifier = new SemanticsIdentifier(SemanticsIdentifier.IdentityType.PNO, userRequest.getCountry(), userRequest.getNationalIdentityNumber());
         NotificationCertificateChoiceSessionResponse response = smartIdClient.createNotificationCertificateChoice()
                 .withCertificateLevel(certificateLevel)
@@ -76,7 +72,7 @@ public class SmartIdNotificationBasedCertificateChoiceService {
                 .initCertificateChoice();
 
         session.setAttribute("certificateChoiceCertificateLevel", certificateLevel);
-        smartIdSessionsStatusService.startPolling(session, response.getSessionID());
+        smartIdSessionsStatusService.startPolling(session, response.sessionID());
     }
 
     public boolean checkCertificateChoiceStatus(HttpSession session) {
@@ -94,7 +90,7 @@ public class SmartIdNotificationBasedCertificateChoiceService {
                 .orElse(false);
     }
 
-    public CertificateChoiceResponse getCertificateChoice(HttpSession session, SessionStatus status) {
+    private CertificateChoiceResponse getCertificateChoice(HttpSession session, SessionStatus status) {
         try {
             CertificateLevel requestedCertificateLevel = (CertificateLevel) session.getAttribute("certificateChoiceCertificateLevel");
             return certificateChoiceResponseValidator.validate(status, requestedCertificateLevel);

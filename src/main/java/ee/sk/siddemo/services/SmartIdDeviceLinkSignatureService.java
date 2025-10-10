@@ -62,7 +62,7 @@ import ee.sk.smartid.exception.useraction.UserRefusedException;
 import ee.sk.smartid.rest.dao.DeviceLinkSessionResponse;
 import ee.sk.smartid.rest.dao.SemanticsIdentifier;
 import ee.sk.smartid.rest.dao.SessionStatus;
-import ee.sk.smartid.rest.dao.SignatureSessionRequest;
+import ee.sk.smartid.rest.dao.DeviceLinkSignatureSessionRequest;
 import ee.sk.smartid.util.CallbackUrlUtil;
 import jakarta.servlet.http.HttpSession;
 
@@ -110,7 +110,7 @@ public class SmartIdDeviceLinkSignatureService {
                 .withDocumentNumber(userDocumentNumberRequest.getDocumentNumber())
                 .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString());
         DeviceLinkSessionResponse sessionResponse = deviceLinkSignatureSessionRequestBuilder.initSignatureSession();
-        SignatureSessionRequest sessionRequest = deviceLinkSignatureSessionRequestBuilder.getSignatureSessionRequest();
+        DeviceLinkSignatureSessionRequest sessionRequest = deviceLinkSignatureSessionRequestBuilder.getSignatureSessionRequest();
 
         sessionStore.put(session.getId(), "deviceLinkSessionInfo",
                 sessionInfoBuilder.withSessionResponse(sessionResponse).withSessionRequest(sessionRequest).build());
@@ -138,7 +138,7 @@ public class SmartIdDeviceLinkSignatureService {
                 .withInteractions(List.of(DeviceLinkInteraction.displayTextAndPin("Sign the document!")))
                 .withInitialCallbackUrl(callbackUrl.initialCallbackUri().toString());
         DeviceLinkSessionResponse sessionResponse = builder.initSignatureSession();
-        SignatureSessionRequest sessionRequest = builder.getSignatureSessionRequest();
+        DeviceLinkSignatureSessionRequest sessionRequest = builder.getSignatureSessionRequest();
 
         sessionStore.put(session.getId(), "deviceLinkSessionInfo",
                 sessionInfoBuilder.withSessionResponse(sessionResponse).withSessionRequest(sessionRequest).build());
